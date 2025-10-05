@@ -15,6 +15,7 @@ import {
 export default function Login({ onLogin }) {
   const [, setLocation] = useLocation();
   const [isRegister, setIsRegister] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -23,31 +24,41 @@ export default function Login({ onLogin }) {
   });
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
+    setLoading(true);
 
-  const endpoint = isRegister ? "/api/register" : "/api/login";
-  try {
-    const response = await fetch(`http://localhost:5000${endpoint}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
-    });
+    const endpoint = isRegister ? "/api/register" : "/api/login";
+    const baseUrl =
+      import.meta.env.MODE === "development"
+        ? "http://localhost:5000" // backend in dev
+        : ""; // same origin in production
 
-    const data = await response.json();
+    try {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+        credentials: "include", // keep session cookies
+      });
 
-    if (!response.ok) {
-      alert(data.message);
-      return;
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.message || "Something went wrong");
+        setLoading(false);
+        return;
+      }
+
+      console.log("Success:", data);
+      onLogin(data.user);
+      setLocation("/");
+    } catch (err) {
+      console.error("Error:", err);
+      alert("Could not connect to server. Please try again later.");
+    } finally {
+      setLoading(false);
     }
-
-    console.log("Success:", data);
-    onLogin(data.user);
-    setLocation("/");
-  } catch (err) {
-    console.error(err);
-    alert("Could not connect to server");
-  }
-};
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -68,9 +79,10 @@ export default function Login({ onLogin }) {
                 type="text"
                 placeholder="John Doe"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required={isRegister}
-                data-testid="input-name"
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                required
               />
             </div>
           )}
@@ -82,9 +94,10 @@ export default function Login({ onLogin }) {
               type="email"
               placeholder="you@example.com"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
               required
-              data-testid="input-email"
             />
           </div>
 
@@ -95,9 +108,10 @@ export default function Login({ onLogin }) {
               type="password"
               placeholder="••••••••"
               value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, password: e.target.value })
+              }
               required
-              data-testid="input-password"
             />
           </div>
 
@@ -106,10 +120,12 @@ export default function Login({ onLogin }) {
               <Label htmlFor="role">I am a</Label>
               <Select
                 value={formData.role}
-                onValueChange={(value) => setFormData({ ...formData, role: value })}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, role: value })
+                }
               >
-                <SelectTrigger data-testid="select-role">
-                  <SelectValue />
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="student">Student</SelectItem>
@@ -119,8 +135,12 @@ export default function Login({ onLogin }) {
             </div>
           )}
 
-          <Button type="submit" className="w-full" data-testid="button-submit">
-            {isRegister ? "Register" : "Login"}
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading
+              ? "Processing..."
+              : isRegister
+              ? "Register"
+              : "Login"}
           </Button>
         </form>
 
@@ -129,7 +149,6 @@ export default function Login({ onLogin }) {
             type="button"
             onClick={() => setIsRegister(!isRegister)}
             className="text-primary hover:underline"
-            data-testid="button-toggle-mode"
           >
             {isRegister
               ? "Already have an account? Login"
