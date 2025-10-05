@@ -22,18 +22,32 @@ export default function Login({ onLogin }) {
     role: "student",
   });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Login/Register:", formData);
-    onLogin({
-      name: formData.name || "John Doe",
-      email: formData.email,
-      role: formData.role,
-      projectsCount: 0,
-      rating: 0,
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  const endpoint = isRegister ? "/api/register" : "/api/login";
+  try {
+    const response = await fetch(`http://localhost:5000${endpoint}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formData),
     });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(data.message);
+      return;
+    }
+
+    console.log("Success:", data);
+    onLogin(data.user);
     setLocation("/");
-  };
+  } catch (err) {
+    console.error(err);
+    alert("Could not connect to server");
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">

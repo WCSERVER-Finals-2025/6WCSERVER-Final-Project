@@ -1,10 +1,25 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import dotenv from "dotenv";
+import mongoose from "mongoose";
+import session from "express-session";
+import MongoStore from "connect-mongo";
+
+dotenv.config();
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+(async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI!);
+    console.log("MongoDB connected successfully");
+  } catch (err) {
+    console.error("MongoDB connection failed:", err);
+  }
+})();
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -16,6 +31,21 @@ app.use((req, res, next) => {
     capturedJsonResponse = bodyJson;
     return originalResJson.apply(res, [bodyJson, ...args]);
   };
+
+  app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "supersecretkey",
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGODB_URI!,
+      collectionName: "sessions",
+    }),
+    cookie: {
+      maxAge: 1000 * 60 * 60 * 24, // 1 day
+    },
+  })
+);
 
   res.on("finish", () => {
     const duration = Date.now() - start;
@@ -61,7 +91,7 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
-  app.listen(5000, () => {
-  console.log('Server running on port 5000');
+  app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });
 })();
