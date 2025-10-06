@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -23,15 +23,34 @@ export default function Login({ onLogin }) {
     role: "student",
   });
 
+  const baseUrl =
+    import.meta.env.MODE === "development"
+      ? "http://localhost:5000" // backend in dev
+      : ""; // same origin in production
+
+  // 🟢 Check session on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${baseUrl}/api/me`, {
+          credentials: "include",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          onLogin(data.user);
+          setLocation("/");
+        }
+      } catch (err) {
+        console.warn("Session check failed:", err);
+      }
+    })();
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     const endpoint = isRegister ? "/api/register" : "/api/login";
-    const baseUrl =
-      import.meta.env.MODE === "development"
-        ? "http://localhost:5000" // backend in dev
-        : ""; // same origin in production
 
     try {
       const response = await fetch(`${baseUrl}${endpoint}`, {

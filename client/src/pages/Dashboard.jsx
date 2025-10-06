@@ -47,7 +47,21 @@ export default function Dashboard({ currentUser }) {
 
   return (
     <div className="flex h-screen bg-background">
-      <Sidebar currentUser={currentUser} pendingCount={5} />
+      <Sidebar
+        currentUser={currentUser}
+        pendingCount={5}
+        onLogout={async () => {
+          try {
+            await fetch("http://localhost:5000/api/logout", {
+              method: "POST",
+              credentials: "include",
+            });
+            window.location.reload(); // reloads app to show login screen
+          } catch (error) {
+            console.error("Logout failed:", error);
+          }
+        }}
+      />
 
       <div className="flex-1 overflow-auto">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 p-6 max-w-7xl mx-auto">

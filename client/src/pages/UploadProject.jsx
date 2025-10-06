@@ -58,15 +58,46 @@ export default function UploadProject({ currentUser }) {
     setFormData({ ...formData, files: formData.files.filter((_, i) => i !== index) });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Uploading project:", formData);
-    toast({
-      title: "Project Submitted",
-      description: "Your project has been submitted for approval.",
-    });
-    setLocation("/");
+
+    const data = new FormData();
+    data.append("title", formData.title);
+    data.append("description", formData.description);
+    data.append("course", formData.course);
+    formData.tags.forEach(tag => data.append("tags", tag));
+    formData.files.forEach(file => data.append("files", file));
+
+    try {
+      const res = await fetch("http://localhost:5000/api/projects/upload", {
+        method: "POST",
+        body: data,
+        credentials: "include", // 🔥 critical for session cookie
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Upload failed");
+      }
+
+      const result = await res.json();
+      console.log("Upload success:", result);
+
+      toast({
+        title: "Project Submitted",
+        description: "Your project has been submitted for approval.",
+      });
+      setLocation("/");
+    } catch (error) {
+      console.error("Upload failed:", error);
+      toast({
+        title: "Upload Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
+
 
   return (
     <div className="flex h-screen bg-background">

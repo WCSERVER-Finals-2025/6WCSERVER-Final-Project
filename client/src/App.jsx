@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Switch, Route } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
@@ -13,30 +13,52 @@ import ProjectDetail from "@/pages/ProjectDetail";
 import AdminPanel from "@/pages/AdminPanel";
 import Profile from "@/pages/Profile";
 
-function Router({ currentUser, onLogin }) {
+function Router({ currentUser, onLogin, onLogout }) {
   if (!currentUser) {
     return <Login onLogin={onLogin} />;
   }
 
   return (
     <Switch>
-      <Route path="/" component={() => <Dashboard currentUser={currentUser} />} />
-      <Route path="/browse" component={() => <BrowseProjects currentUser={currentUser} />} />
-      <Route path="/upload" component={() => <UploadProject currentUser={currentUser} />} />
-      <Route path="/project/:id" component={() => <ProjectDetail currentUser={currentUser} />} />
-      <Route path="/admin" component={() => <AdminPanel currentUser={currentUser} />} />
-      <Route path="/profile" component={() => <Profile currentUser={currentUser} />} />
+      <Route path="/" component={() => <Dashboard currentUser={currentUser} onLogout={onLogout} />} />
+      <Route path="/browse" component={() => <BrowseProjects currentUser={currentUser} onLogout={onLogout} />} />
+      <Route path="/upload" component={() => <UploadProject currentUser={currentUser} onLogout={onLogout} />} />
+      <Route path="/project/:id" component={() => <ProjectDetail currentUser={currentUser} onLogout={onLogout} />} />
+      <Route path="/admin" component={() => <AdminPanel currentUser={currentUser} onLogout={onLogout} />} />
+      <Route path="/profile" component={() => <Profile currentUser={currentUser} onLogout={onLogout} />} />
     </Switch>
   );
 }
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/me", {
+          credentials: "include", // <-- this allows cookies
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setCurrentUser(data.user);
+        }
+      } catch (err) {
+        console.error("Failed to restore session:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  if (loading) return <p>Loading...</p>;
 
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Router currentUser={currentUser} onLogin={setCurrentUser} />
+        <Router currentUser={currentUser} onLogin={setCurrentUser} onLogout={() => setCurrentUser(null)} />
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>

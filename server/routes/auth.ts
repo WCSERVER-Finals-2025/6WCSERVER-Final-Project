@@ -1,56 +1,86 @@
-import { Router } from "express";
-import { User } from "../models/User.js";
-import bcrypt from "bcryptjs";
+import express from "express";
+import User from "../models/User"; // we'll create this next
 
-const router = Router();
+// Extend express-session types to include 'user' on SessionData
+import session from "express-session";
 
-// Register
+declare module "express-session" {
+  interface SessionData {
+    user?: {
+      id: string;
+      name: string;
+      email: string;
+      role: string;
+    };
+  }
+}
+
+const router = express.Router();
+
+// --- REGISTER ---
 router.post("/register", async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
-    if (!email || !password)
-      return res.status(400).json({ message: "Email and password required" });
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.status(400).json({ message: "Email already registered" });
+    }
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser)
-      return res.status(400).json({ message: "User already exists" });
+    const user = new User({ name, email, password, role });
+    await user.save();
 
-    const hashed = await bcrypt.hash(password, 10);
-    const newUser = await User.create({ name, email, password: hashed, role });
-
-    res.status(201).json({
-      message: "User registered successfully",
-      user: { id: newUser._id, name, email, role },
-    });
+    req.session.user = { id: user._id.toString(), name: user.name, email: user.email, role: user.role };
+    res.json({ user: req.session.user });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
+    console.error("Register error:", err);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
-// Login
+// --- LOGIN ---
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-
     const user = await User.findOne({ email });
-    if (!user)
-      return res.status(400).json({ message: "Invalid email or password" });
 
-    const match = await bcrypt.compare(password, user.password);
-    if (!match)
-      return res.status(400).json({ message: "Invalid email or password" });
+    if (!user || user.password !== password) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
 
-    // optionally: store session info here
-    res.json({
-      message: "Login successful",
-      user: { id: user._id, name: user.name, email: user.email, role: user.role },
-    });
+    req.session.user = { id: user._id.toString(), name: user.name, email: user.email, role: user.role };
+    res.json({ user: req.session.user });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
+    console.error("Login error:", err);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
+
+// --- WHO AM I (RESTORE SESSION) ---
+router.get("/me", (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ message: "Not logged in" });
+  }
+  res.json({ user: req.session.user });
+});
+
+// --- LOGOUT ---
+router.post("/logout", (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error("Logout error:", err);
+      return res.status(500).json({ message: "Could not log out" });
+    }
+    res.clearCookie("connect.sid");
+    res.json({ message: "Logged out successfully" });
+  });
+});
+
+export function ensureAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
+  if (!req.session.user) {
+    return res.status(401).json({ message: "Unauthorized: Please log in" });
+  }
+  next();
+}
 
 export default router;

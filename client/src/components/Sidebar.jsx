@@ -3,10 +3,29 @@ import { Home, FolderOpen, Upload, User, FileCheck, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-export default function Sidebar({ currentUser, pendingCount = 0 }) {
-  const [location] = useLocation();
+export default function Sidebar({ currentUser, pendingCount = 0, onLogout }) {
+  const [location, setLocation] = useLocation();
 
   const isActive = (path) => location === path;
+
+  const baseUrl =
+    import.meta.env.MODE === "development"
+      ? "http://localhost:5000"
+      : "";
+
+  const handleLogout = async () => {
+    try {
+      await fetch(`${baseUrl}/api/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (err) {
+      console.error("Logout failed:", err);
+    } finally {
+      if (onLogout) onLogout();
+      setLocation("/login");
+    }
+  };
 
   const studentLinks = [
     { path: "/", icon: Home, label: "Dashboard" },
@@ -55,7 +74,8 @@ export default function Sidebar({ currentUser, pendingCount = 0 }) {
       <div className="p-4 border-t border-sidebar-border">
         <Button
           variant="ghost"
-          className="w-full justify-start gap-3"
+          className="w-full justify-start gap-3 text-destructive"
+          onClick={handleLogout}
           data-testid="button-logout"
         >
           <LogOut className="h-5 w-5" />
