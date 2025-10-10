@@ -100,7 +100,7 @@ app.use((req, res, next) => {
   });
 
   if (app.get("env") === "development") {
-    await setupVite(app, server); // ✅ now valid types
+    await setupVite(app, server);
   } else {
     serveStatic(app);
   }
@@ -109,4 +109,4 @@ app.use((req, res, next) => {
   server.listen(port, () => {
     console.log(`Server running on port ${port}`);
   });
-});
+})();
