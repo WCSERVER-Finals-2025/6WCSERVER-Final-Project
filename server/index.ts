@@ -9,6 +9,8 @@ import MongoStore from "connect-mongo";
 import cors from "cors";
 import projectRoutes from "./routes/projects";
 import authRoutes from "./routes/auth";
+import passport from "passport";
+import dashboardRoutes from "./routes/dashboard";
 
 dotenv.config();
 
@@ -17,21 +19,6 @@ app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-app.use("/api/auth", authRoutes);
-app.use("/api/projects", projectRoutes);
-app.use("/uploads", express.static("uploads"));
-
-// ✅ Connect to MongoDB
-(async () => {
-  try {
-    await mongoose.connect(process.env.MONGODB_URI!);
-    console.log("MongoDB connected successfully");
-  } catch (err) {
-    console.error("MongoDB connection failed:", err);
-  }
-})();
-
-// ✅ Setup session middleware (only once)
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "supersecretkey",
@@ -46,6 +33,25 @@ app.use(
     },
   })
 );
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+// ✅ Connect to MongoDB
+(async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI!);
+    console.log("MongoDB connected successfully");
+  } catch (err) {
+    console.error("MongoDB connection failed:", err);
+  }
+})();
+
+app.use("/api/auth", authRoutes);
+app.use("/api/projects", projectRoutes);
+app.use("/uploads", express.static("uploads"));
+app.use("/api/dashboard", dashboardRoutes);
+
 
 // ✅ Logging middleware
 app.use((req, res, next) => {

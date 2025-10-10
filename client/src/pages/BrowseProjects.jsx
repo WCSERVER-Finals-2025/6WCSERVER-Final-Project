@@ -1,56 +1,56 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import SearchBar from "@/components/SearchBar";
 import FilterPanel from "@/components/FilterPanel";
 import ProjectCard from "@/components/ProjectCard";
+import { useToast } from "@/hooks/use-toast";
 
 export default function BrowseProjects({ currentUser }) {
+  const { toast } = useToast();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedTags, setSelectedTags] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const [projects] = useState([
-    {
-      id: 1,
-      title: "E-Commerce Website",
-      author: "Alice Johnson",
-      date: "2 hours ago",
-      description: "A full-stack e-commerce platform with shopping cart functionality",
-      tags: ["React", "Node.js", "MongoDB"],
-      thumbsUp: 12,
-      thumbsDown: 1,
-      commentsCount: 5,
-      status: "approved"
-    },
-    {
-      id: 2,
-      title: "Weather App",
-      author: "Bob Smith",
-      date: "5 hours ago",
-      description: "Mobile weather application with real-time updates",
-      tags: ["React Native", "API"],
-      thumbsUp: 8,
-      thumbsDown: 0,
-      commentsCount: 3,
-      status: "approved"
-    },
-    {
-      id: 3,
-      title: "Task Manager",
-      author: "Carol White",
-      date: "1 day ago",
-      description: "A simple task management tool with drag-and-drop",
-      tags: ["React", "UI/UX"],
-      thumbsUp: 15,
-      thumbsDown: 2,
-      commentsCount: 7,
-      status: "approved"
-    },
-  ]);
+  // ✅ Fetch projects from backend
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setLoading(true);
+
+        const params = new URLSearchParams();
+        if (selectedCourse) params.append("course", selectedCourse);
+        if (selectedTags.length) params.append("tags", selectedTags.join(","));
+        if (searchQuery) params.append("q", searchQuery);
+
+        const res = await fetch(`/api/projects?${params.toString()}`, {
+          credentials: "include",
+        });
+
+        if (!res.ok) throw new Error("Failed to fetch projects");
+
+        const data = await res.json();
+        setProjects(data);
+      } catch (err) {
+        console.error(err);
+        toast({
+          title: "Error",
+          description: "Failed to load projects.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, [selectedCourse, selectedTags, searchQuery]);
 
   const handleTagToggle = (tag) => {
-    setSelectedTags(prev =>
-      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
     );
   };
 
@@ -88,9 +88,17 @@ export default function BrowseProjects({ currentUser }) {
             </div>
 
             <div className="space-y-4">
-              {projects.map((project) => (
-                <ProjectCard key={project.id} project={project} />
-              ))}
+              {loading ? (
+                <div className="text-muted-foreground">Loading projects...</div>
+              ) : projects.length ? (
+                projects.map((project) => (
+                  <ProjectCard key={project._id} project={project} />
+                ))
+              ) : (
+                <div className="text-muted-foreground">
+                  No projects found.
+                </div>
+              )}
             </div>
           </div>
         </div>
