@@ -1,5 +1,6 @@
 // routes/users.ts
 import express from "express";
+import mongoose from "mongoose";
 import Project from "../models/Project";
 import { ensureAuth } from "./auth";
 
@@ -10,13 +11,24 @@ router.get("/:id/stats", ensureAuth, async (req, res) => {
   try {
     const userId = req.params.id;
 
-    const projectsCount = await Project.countDocuments({ uploadedBy: userId });
-    const ratingAggregate = await Project.aggregate([
+    // ✅ Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+
+    // ✅ Single aggregation for both count and thumbsUp sum
+    const stats = await Project.aggregate([
       { $match: { uploadedBy: new mongoose.Types.ObjectId(userId) } },
-      { $group: { _id: null, totalThumbsUp: { $sum: "$thumbsUp" } } },
+      { 
+        $group: { 
+          _id: null,
+          projectsCount: { $sum: 1 },
+          totalThumbsUp: { $sum: "$thumbsUp" }
+        } 
+      }
     ]);
 
-    const rating = ratingAggregate[0]?.totalThumbsUp || 0;
+    const { projectsCount = 0, totalThumbsUp: rating = 0 } = stats[0] || {};
 
     res.json({ projectsCount, rating });
   } catch (err) {

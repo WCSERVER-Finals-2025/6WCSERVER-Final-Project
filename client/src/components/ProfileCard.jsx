@@ -1,28 +1,29 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 
 export default function ProfileCard({ user }) {
   const [stats, setStats] = useState({ projectsCount: 0, rating: 0 });
 
+  // Fetch user stats dynamically
   useEffect(() => {
-    if (!user?.id) return;
-
     const fetchStats = async () => {
       try {
-        const res = await fetch(`/api/users/${user.id}/stats`, { credentials: "include" });
-        if (!res.ok) throw new Error("Failed to fetch user stats");
+        const res = await fetch(`/api/users/${user.id}/stats`, {
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error("Failed to fetch stats");
         const data = await res.json();
         setStats(data);
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching user stats  :", err);
       }
     };
 
-    fetchStats();
+    if (user?.id) fetchStats();
   }, [user?.id]);
 
   const initials = user?.name

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,53 +9,67 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function AdminPanel({ currentUser }) {
   const { toast } = useToast();
-  const [pendingProjects, setPendingProjects] = useState([
-    {
-      id: 1,
-      title: "Machine Learning Image Classifier",
-      author: "David Brown",
-      date: "1 hour ago",
-      course: "Machine Learning",
-      description: "A CNN-based image classifier trained on custom dataset",
-      tags: ["Python", "TensorFlow", "ML"],
-    },
-    {
-      id: 2,
-      title: "Mobile Fitness Tracking App",
-      author: "Emma Wilson",
-      date: "3 hours ago",
-      course: "Mobile Development",
-      description: "React Native app for tracking workouts and nutrition",
-      tags: ["React Native", "Firebase", "Mobile"],
-    },
-    {
-      id: 3,
-      title: "Blockchain Voting System",
-      author: "Frank Miller",
-      date: "5 hours ago",
-      course: "Cybersecurity",
-      description: "Secure voting platform using blockchain technology",
-      tags: ["Blockchain", "Solidity", "Web3"],
-    },
-  ]);
+  const [pendingProjects, setPendingProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleApprove = (projectId) => {
-    console.log("Approving project:", projectId);
-    setPendingProjects(prev => prev.filter(p => p.id !== projectId));
-    toast({
-      title: "Project Approved",
-      description: "The project has been approved and is now public.",
-    });
-  };
+  // ✅ Fetch pending projects dynamically
+  useEffect(() => {
+    if (!currentUser?.id) return;
 
-  const handleReject = (projectId) => {
-    console.log("Rejecting project:", projectId);
-    setPendingProjects(prev => prev.filter(p => p.id !== projectId));
-    toast({
-      title: "Project Rejected",
-      description: "The project has been rejected.",
-      variant: "destructive",
-    });
+    const fetchPending = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch("/api/projects?status=pending", {
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error("Failed to fetch pending projects");
+
+        const data = await res.json();
+        setPendingProjects(data || []);
+      } catch (err) {
+        console.error("Error fetching pending projects:", err);
+        toast({
+          title: "Error",
+          description: "Could not load pending projects.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPending();
+  }, [currentUser?.id]);
+
+  // ✅ Approve or Reject project
+  const handleUpdateStatus = async (projectId, status) => {
+    try {
+      const res = await fetch(`/api/projects/${projectId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+        credentials: "include",
+      });
+
+      if (!res.ok) throw new Error("Failed to update project status");
+      const data = await res.json();
+
+      // Remove project from pending list
+      setPendingProjects((prev) => prev.filter((p) => p._id !== projectId));
+
+      toast({
+        title: status === "approved" ? "Project Approved" : "Project Rejected",
+        description: `Project has been ${status}.`,
+        variant: status === "approved" ? "default" : "destructive",
+      });
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: "Error",
+        description: "Could not update project status.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -66,61 +80,55 @@ export default function AdminPanel({ currentUser }) {
         <div className="p-6 max-w-5xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-3xl font-bold">Pending Approvals</h1>
-            <Badge variant="secondary" data-testid="badge-total-pending">
-              {pendingProjects.length} Pending
-            </Badge>
+            <Badge variant="secondary">{pendingProjects.length} Pending</Badge>
           </div>
 
-          {pendingProjects.length === 0 ? (
+          {loading ? (
             <Card className="p-8 text-center">
-              <p className="text-muted-foreground" data-testid="text-no-pending">
-                No pending projects to review
-              </p>
+              <p className="text-muted-foreground">Loading pending projects...</p>
+            </Card>
+          ) : pendingProjects.length === 0 ? (
+            <Card className="p-8 text-center">
+              <p className="text-muted-foreground">No pending projects to review.</p>
             </Card>
           ) : (
             <div className="space-y-4">
               {pendingProjects.map((project) => (
-                <Card key={project.id} className="p-6" data-testid={`card-pending-${project.id}`}>
+                <Card key={project._id} className="p-6">
                   <div className="flex items-start gap-4 mb-4">
                     <Avatar>
                       <AvatarFallback>
-                        {project.author.split(" ").map(n => n[0]).join("")}
+                        {project.author?.split(" ").map((n) => n[0]).join("") || "U"}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                      <h3 className="text-xl font-semibold mb-1">{project.title}</h3>
+                      <h3 className="text-xl font-semibold mb-1">{project.title || "Untitled"}</h3>
                       <p className="text-sm text-muted-foreground">
-                        by {project.author} • {project.date}
+                        by {project.author || "Unknown"}
                       </p>
-                      <Badge variant="secondary" className="mt-2">{project.course}</Badge>
+                      <Badge variant="secondary" className="mt-2">{project.course || "General"}</Badge>
+                      <p className="text-foreground mt-2">{project.description || ""}</p>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {project.tags?.map((tag) => (
+                          <Badge key={tag} variant="outline">{tag}</Badge>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
-                  <p className="text-foreground mb-4">{project.description}</p>
-
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {project.tags.map((tag) => (
-                      <Badge key={tag} variant="outline">{tag}</Badge>
-                    ))}
-                  </div>
-
-                  <div className="flex gap-3">
+                  <div className="flex gap-3 mt-4">
                     <Button
-                      onClick={() => handleApprove(project.id)}
+                      onClick={() => handleUpdateStatus(project._id, "approved")}
                       className="flex-1"
-                      data-testid={`button-approve-${project.id}`}
                     >
-                      <Check className="h-4 w-4 mr-2" />
-                      Approve
+                      <Check className="h-4 w-4 mr-2" /> Approve
                     </Button>
                     <Button
                       variant="destructive"
-                      onClick={() => handleReject(project.id)}
+                      onClick={() => handleUpdateStatus(project._id, "rejected")}
                       className="flex-1"
-                      data-testid={`button-reject-${project.id}`}
                     >
-                      <X className="h-4 w-4 mr-2" />
-                      Reject
+                      <X className="h-4 w-4 mr-2" /> Reject
                     </Button>
                   </div>
                 </Card>

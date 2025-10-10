@@ -3,50 +3,33 @@ import Sidebar from "@/components/Sidebar";
 import SearchBar from "@/components/SearchBar";
 import FilterPanel from "@/components/FilterPanel";
 import ProjectCard from "@/components/ProjectCard";
-import { useToast } from "@/hooks/use-toast";
 
 export default function BrowseProjects({ currentUser }) {
-  const { toast } = useToast();
-
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedTags, setSelectedTags] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Fetch projects from backend
+  // --- Fetch projects dynamically from API ---
   useEffect(() => {
+    if (!currentUser?.id) return;
+
     const fetchProjects = async () => {
       try {
         setLoading(true);
-
-        const params = new URLSearchParams();
-        if (selectedCourse) params.append("course", selectedCourse);
-        if (selectedTags.length) params.append("tags", selectedTags.join(","));
-        if (searchQuery) params.append("q", searchQuery);
-
-        const res = await fetch(`/api/projects?${params.toString()}`, {
-          credentials: "include",
-        });
-
-        if (!res.ok) throw new Error("Failed to fetch projects");
-
+        const res = await fetch("/api/projects", { credentials: "include" });
         const data = await res.json();
-        setProjects(data);
+        setProjects(data || []);
       } catch (err) {
-        console.error(err);
-        toast({
-          title: "Error",
-          description: "Failed to load projects.",
-          variant: "destructive",
-        });
+        console.error("Error fetching projects:", err);
       } finally {
         setLoading(false);
       }
     };
 
     fetchProjects();
-  }, [selectedCourse, selectedTags, searchQuery]);
+  }, [currentUser]);
 
   const handleTagToggle = (tag) => {
     setSelectedTags((prev) =>
@@ -59,6 +42,22 @@ export default function BrowseProjects({ currentUser }) {
     setSelectedTags([]);
     setSearchQuery("");
   };
+
+  // --- Filter projects for search, course, and tags ---
+  const filteredProjects = projects.filter((p) => {
+    const matchesSearch =
+      !searchQuery ||
+      p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.author?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    const matchesCourse = !selectedCourse || p.course === selectedCourse;
+
+    const matchesTags =
+      selectedTags.length === 0 || p.tags.some((tag) => selectedTags.includes(tag));
+
+    return matchesSearch && matchesCourse && matchesTags;
+  });
 
   return (
     <div className="flex h-screen bg-background">
@@ -77,28 +76,26 @@ export default function BrowseProjects({ currentUser }) {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
-            <div>
-              <FilterPanel
-                selectedCourse={selectedCourse}
-                selectedTags={selectedTags}
-                onCourseChange={setSelectedCourse}
-                onTagToggle={handleTagToggle}
-                onClearFilters={handleClearFilters}
-              />
-            </div>
+            <FilterPanel
+              selectedCourse={selectedCourse}
+              selectedTags={selectedTags}
+              onCourseChange={setSelectedCourse}
+              onTagToggle={handleTagToggle}
+              onClearFilters={handleClearFilters}
+            />
 
             <div className="space-y-4">
-              {loading ? (
-                <div className="text-muted-foreground">Loading projects...</div>
-              ) : projects.length ? (
-                projects.map((project) => (
-                  <ProjectCard key={project._id} project={project} />
-                ))
-              ) : (
-                <div className="text-muted-foreground">
-                  No projects found.
-                </div>
+              {loading && <p className="text-muted-foreground">Loading projects...</p>}
+              {!loading && filteredProjects.length === 0 && (
+                <p className="text-muted-foreground">No projects found.</p>
               )}
+              {!loading &&
+                filteredProjects.map((project) => (
+                  <ProjectCard
+                    key={project._id || project.id}
+                    project={project}
+                  />
+                ))}
             </div>
           </div>
         </div>

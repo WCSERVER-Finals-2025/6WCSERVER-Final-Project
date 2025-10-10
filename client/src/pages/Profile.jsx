@@ -4,7 +4,16 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Download, Trash, Edit } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Link } from "wouter";
 
@@ -12,6 +21,10 @@ export default function Profile({ currentUser }) {
   const [myProjects, setMyProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
+
+  // Modal state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editProject, setEditProject] = useState(null);
 
   useEffect(() => {
     if (!currentUser?.id) return;
@@ -24,7 +37,7 @@ export default function Profile({ currentUser }) {
         });
         if (!res.ok) throw new Error("Failed to fetch projects");
         const data = await res.json();
-        setMyProjects(data);
+        setMyProjects(data || []);
       } catch (err) {
         console.error("Error fetching projects:", err);
       } finally {
@@ -34,6 +47,82 @@ export default function Profile({ currentUser }) {
 
     fetchProjects();
   }, [currentUser?.id]);
+
+  const handleDelete = async (projectId) => {
+    if (!confirm("Are you sure you want to delete this project?")) return;
+    try {
+      const res = await fetch(`/api/projects/${projectId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      const text = await res.text(); // read the raw response
+      try {
+        const data = JSON.parse(text);
+        if (!res.ok) throw new Error(data.message || "Delete failed");
+        setMyProjects((prev) => prev.filter((p) => p._id !== projectId));
+        alert("Project deleted successfully");
+      } catch (err) {
+        console.error("Delete parse error:", text);
+        alert("Delete failed: " + err.message);
+      }
+      if (!res.ok) throw new Error(data.message || "Delete failed");
+
+      setMyProjects((prev) => prev.filter((p) => p._id !== projectId));
+      alert("Project deleted successfully");
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
+    }
+  };
+
+  // Opens modal with project data
+  const handleEdit = (project) => {
+    setEditProject({ ...project });
+    setIsEditing(true);
+  };
+
+  // Save edited project (PATCH request)
+  const handleSaveEdit = async () => {
+  if (!editProject?._id) return;
+
+  try {
+    const res = await fetch(`/api/projects/${editProject._id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        title: editProject.title,
+        description: editProject.description,
+        course: editProject.course,
+        tags: editProject.tags || [],
+      }),
+    });
+
+    const text = await res.text(); // get raw text in case it's HTML
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      console.error("Invalid JSON in update response:", text);
+      alert("Error: server did not return valid JSON");
+      return;
+    }
+
+    if (!res.ok) throw new Error(data.message || "Update failed");
+
+    // ✅ update UI with the new project data
+    setMyProjects((prev) =>
+      prev.map((p) => (p._id === editProject._id ? data.project : p))
+    );
+
+    alert("Project updated successfully");
+    setIsEditing(false);
+  } catch (err) {
+    console.error("Error saving edit:", err);
+    alert(err.message);
+  }
+};
 
   const filteredProjects = (status) => {
     if (status === "all") return myProjects;
@@ -89,7 +178,7 @@ export default function Profile({ currentUser }) {
             </div>
           </Card>
 
-          {/* PROJECTS WITH TABS */}
+          {/* PROJECTS */}
           <div>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-4">
@@ -107,23 +196,41 @@ export default function Profile({ currentUser }) {
                   )}
                   {!loading &&
                     filteredProjects(status).map((project) => (
-                      <Card
-                        key={project._id}
-                        className="p-4 hover:bg-muted/50 transition"
-                      >
-                        <Link href={`/project/${project._id}`} className="block">
-                          <h3 className="text-lg font-semibold">{project.title}</h3>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            {project.description}
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            {project.tags?.map((tag) => (
-                              <Badge key={tag} variant="outline">
-                                {tag}
-                              </Badge>
-                            ))}
-                          </div>
-                        </Link>
+                      <Card key={project._id} className="p-4 hover:bg-muted/50 transition">
+                        <div className="flex justify-between items-start">
+                          <Link href={`/project/${project._id}`} className="block flex-1">
+                            <h3 className="text-lg font-semibold">{project.title}</h3>
+                            <p className="text-sm text-muted-foreground mb-2">
+                              {project.description}
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {project.tags?.map((tag) => (
+                                <Badge key={tag} variant="outline">
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+                          </Link>
+
+                          {project.uploadedBy?._id === currentUser.id && (
+                            <div className="flex flex-col ml-4 gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEdit(project)}
+                              >
+                                <Edit className="h-4 w-4 mr-1" /> Edit
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleDelete(project._id)}
+                              >
+                                <Trash className="h-4 w-4 mr-1" /> Delete
+                              </Button>
+                            </div>
+                          )}
+                        </div>
                       </Card>
                     ))}
                 </TabsContent>
@@ -132,6 +239,119 @@ export default function Profile({ currentUser }) {
           </div>
         </div>
       </div>
+
+      {/* EDIT PROJECT MODAL */}
+      <Dialog open={isEditing} onOpenChange={setIsEditing}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Project</DialogTitle>
+          </DialogHeader>
+
+          {editProject && (
+            <div className="space-y-4">
+              <Input
+                label="Title"
+                value={editProject.title}
+                onChange={(e) =>
+                  setEditProject({ ...editProject, title: e.target.value })
+                }
+                placeholder="Enter project title"
+              />
+
+              <Textarea
+                label="Description"
+                value={editProject.description}
+                onChange={(e) =>
+                  setEditProject({ ...editProject, description: e.target.value })
+                }
+                placeholder="Describe your project..."
+              />
+
+              <Input
+                label="Course"
+                value={editProject.course}
+                onChange={(e) =>
+                  setEditProject({ ...editProject, course: e.target.value })
+                }
+                placeholder="Enter course name"
+              />
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">Tags</label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {editProject.tags?.map((tag, index) => (
+                    <Badge
+                      key={index}
+                      variant="outline"
+                      className="flex items-center gap-1 cursor-pointer hover:bg-muted"
+                    >
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditProject({
+                            ...editProject,
+                            tags: editProject.tags.filter((_, i) => i !== index),
+                          })
+                        }
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        ×
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    placeholder="Add new tag..."
+                    value={editProject.newTag || ""}
+                    onChange={(e) =>
+                      setEditProject({ ...editProject, newTag: e.target.value })
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && editProject.newTag.trim()) {
+                        e.preventDefault();
+                        const newTag = editProject.newTag.trim();
+                        if (!editProject.tags.includes(newTag)) {
+                          setEditProject({
+                            ...editProject,
+                            tags: [...(editProject.tags || []), newTag],
+                            newTag: "",
+                          });
+                        }
+                      }
+                    }}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      const newTag = editProject.newTag?.trim();
+                      if (newTag && !editProject.tags.includes(newTag)) {
+                        setEditProject({
+                          ...editProject,
+                          tags: [...(editProject.tags || []), newTag],
+                          newTag: "",
+                        });
+                      }
+                    }}
+                  >
+                    Add
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="mt-6 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsEditing(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

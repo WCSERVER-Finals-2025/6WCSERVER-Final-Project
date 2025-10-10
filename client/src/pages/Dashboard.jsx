@@ -6,53 +6,47 @@ import TopProjectsWidget from "@/components/TopProjectsWidget";
 import ProjectCard from "@/components/ProjectCard";
 
 export default function Dashboard({ currentUser }) {
-  const [feedProjects, setFeedProjects] = useState([]);
   const [recentProjects, setRecentProjects] = useState([]);
   const [topProjects, setTopProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [feedProjects, setFeedProjects] = useState([]);
 
   useEffect(() => {
-    const fetchDashboard = async () => {
+    const fetchProjects = async () => {
       try {
-        setLoading(true);
+        // Normal users only see approved projects
+        // Admins can see all
+        const statusQuery = currentUser?.role === "admin" ? "" : "status=approved";
 
-        const res = await fetch("http://localhost:5000/api/dashboard", {
-          credentials: "include",
-        });
-        const data = await res.json();
+        // Feed
+        const feedRes = await fetch(`/api/projects?${statusQuery}`, { credentials: "include" });
+        const feedData = await feedRes.json();
+        setFeedProjects(feedData || []);
 
-        setFeedProjects(data.feedProjects || []);
-        setRecentProjects(data.recentProjects || []);
-        setTopProjects(data.topProjects || []);
-      } catch (err) {
-        console.error("Failed to fetch dashboard:", err);
-      } finally {
-        setLoading(false);
+        // Recent approved projects (last 5)
+        const recentRes = await fetch(`/api/projects?${statusQuery}&limit=5`, { credentials: "include" });
+        const recentData = await recentRes.json();
+        setRecentProjects(recentData || []);
+
+        // Top projects (based on thumbsUp)
+        const topRes = await fetch(`/api/projects?${statusQuery}&sort=thumbsUp`, { credentials: "include" });
+        const topData = await topRes.json();
+        setTopProjects(topData || []);
+      } catch (error) {
+        console.error("Failed to fetch projects:", error);
       }
     };
 
-    fetchDashboard();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center text-muted-foreground">
-        Loading dashboard...
-      </div>
-    );
-  }
+    fetchProjects();
+  }, [currentUser?.role]);
 
   return (
     <div className="flex h-screen bg-background">
       <Sidebar
         currentUser={currentUser}
-        pendingCount={5}
+        pendingCount={0} // can dynamically fetch pending count if needed
         onLogout={async () => {
           try {
-            await fetch("http://localhost:5000/api/logout", {
-              method: "POST",
-              credentials: "include",
-            });
+            await fetch("/api/logout", { method: "POST", credentials: "include" });
             window.location.reload();
           } catch (error) {
             console.error("Logout failed:", error);
@@ -63,20 +57,22 @@ export default function Dashboard({ currentUser }) {
       <div className="flex-1 overflow-auto">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 p-6 max-w-7xl mx-auto">
           <div className="space-y-6">
+            {/* Feed */}
             <div>
               <h2 className="text-2xl font-bold mb-4">Feed</h2>
               <div className="space-y-4">
-                {feedProjects.map((project) => (
-                  <ProjectCard key={project._id} project={project} />
+                {(feedProjects || []).map((project) => (
+                  <ProjectCard key={project._id || project.id} project={project} />
                 ))}
               </div>
             </div>
           </div>
 
+          {/* Sidebar Widgets */}
           <div className="space-y-4">
             <ProfileCard user={currentUser} />
-            <RecentApprovedWidget projects={recentProjects} />
-            <TopProjectsWidget projects={topProjects} />
+            <RecentApprovedWidget projects={recentProjects || []} />
+            <TopProjectsWidget projects={topProjects || []} />
           </div>
         </div>
       </div>
