@@ -30,8 +30,6 @@ export default function UploadProject({ currentUser }) {
   });
   const [currentTag, setCurrentTag] = useState("");
 
-  // courses imported from shared module
-
   const handleAddTag = () => {
     if (currentTag && !formData.tags.includes(currentTag)) {
       setFormData({ ...formData, tags: [...formData.tags, currentTag] });
@@ -66,7 +64,7 @@ export default function UploadProject({ currentUser }) {
       const res = await fetch("http://localhost:5000/api/projects/upload", {
         method: "POST",
         body: data,
-        credentials: "include", // 🔥 critical for session cookie
+        credentials: "include",
       });
 
       if (!res.ok) {

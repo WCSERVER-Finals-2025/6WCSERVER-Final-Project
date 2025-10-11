@@ -1,7 +1,6 @@
 import express from "express";
-import User from "../models/User"; // we'll create this next
+import User from "../models/User";
 
-// Extend express-session types to include 'user' on SessionData
 import session from "express-session";
 
 declare module "express-session" {
@@ -17,7 +16,6 @@ declare module "express-session" {
 
 const router = express.Router();
 
-// --- REGISTER ---
 router.post("/register", async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
@@ -38,7 +36,6 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// --- LOGIN ---
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -56,7 +53,6 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// --- WHO AM I (RESTORE SESSION) ---
 router.get("/me", (req, res) => {
   if (!req.session.user) {
     return res.status(401).json({ message: "Not logged in" });
@@ -64,7 +60,6 @@ router.get("/me", (req, res) => {
   res.json({ user: req.session.user });
 });
 
-// --- LOGOUT ---
 router.post("/logout", (req, res) => {
   req.session.destroy((err) => {
     if (err) {

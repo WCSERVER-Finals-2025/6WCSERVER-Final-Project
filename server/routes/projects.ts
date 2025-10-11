@@ -47,7 +47,7 @@ router.post(
         files: fileInfos,
         uploadedBy: user?.id,
         createdAt: new Date(),
-        status: "pending", // ✅ default status
+        status: "pending",
         thumbsUp: 0,
         thumbsDown: 0,
         votes: [],
@@ -67,7 +67,7 @@ router.post(
 router.patch("/:id", ensureAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body; // expected: "approved" | "rejected" | "pending"
+    const { status } = req.body;
 
     if (!["approved", "rejected", "pending"].includes(status))
       return res.status(400).json({ message: "Invalid status value" });
@@ -89,7 +89,6 @@ router.get("/", async (req, res) => {
   try {
     const { userId, status } = req.query;
     const currentUser = req.session.user;
-  // treat teachers as staff (admin-like) as well
     const isAdmin = isStaff(currentUser);
 
     const query: any = {};
@@ -97,8 +96,6 @@ router.get("/", async (req, res) => {
     if (userId) query.uploadedBy = userId;
     if (status) query.status = status;
 
-    // Development debug: log incoming parameters and final query
-    // NOTE: remove or silence this in production
     console.debug("[debug] GET /api/projects incoming", {
       queryParams: { userId, status },
       sessionUser: currentUser,
@@ -106,16 +103,12 @@ router.get("/", async (req, res) => {
       initialQuery: query,
     });
 
-    // For guests, only show approved projects
     if (!currentUser) {
       query.status = "approved";
     } else {
-      // If the request is for a specific user's projects and that user
-      // is the logged-in user, allow showing all statuses (owner view).
       const isRequestingOwn = !!(userId && currentUser && String(userId) === String(currentUser.id));
 
       if (!isAdmin && !isRequestingOwn) {
-        // Normal users see approved + their own pending
         query.$or = [
           { status: "approved" },
           { status: "pending", uploadedBy: currentUser.id },
@@ -126,12 +119,9 @@ router.get("/", async (req, res) => {
     const projects = await Project.find(query)
       .populate("uploadedBy", "name email role")
       .sort({ createdAt: -1 })
-      .limit(50); // safety limit
+      .limit(50);
 
-    // This endpoint returns user-specific content (depends on session/role).
-    // Prevent intermediary/browser caching (304 Not Modified) from returning stale results.
     res.setHeader("Cache-Control", "no-store");
-    // Indicate response varies by Origin and Cookie (sessions)
     res.setHeader("Vary", "Origin, Cookie");
     res.json(projects);
   } catch (err) {
@@ -140,10 +130,8 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Return distinct tags used across projects
 router.get("/tags", async (req, res) => {
   try {
-    // Use MongoDB aggregation to get distinct tags
     const tags = await Project.distinct("tags");
     res.json(tags.sort());
   } catch (err) {
@@ -163,9 +151,6 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// ───────────────────────────────
-// Comments
-// ───────────────────────────────
 router.post("/:id/comments", async (req, res) => {
   try {
     const { author, text } = req.body;
@@ -267,7 +252,6 @@ router.put("/:id", ensureAuth, async (req, res) => {
     const project = await Project.findById(id);
     if (!project) return res.status(404).json({ message: "Project not found" });
 
-    // Authorization: only owner or admin can edit
   const isOwner = project.uploadedBy?.toString() === currentUser?.id?.toString();
   const isAdmin = isStaff(currentUser);
     if (!isOwner && !isAdmin)

@@ -1,4 +1,3 @@
-// server/routes/dashboard.ts
 import express from "express";
 import Project from "../models/Project";
 import { ensureAuth } from "./auth";
@@ -9,7 +8,7 @@ router.get("/", ensureAuth, async (req, res) => {
   try {
     const allProjects = await Project.find().sort({ createdAt: -1 }).lean();
 
-    const feedProjects = allProjects; // all projects for feed
+    const feedProjects = allProjects;
 
     const recentProjects = allProjects
       .filter(p => p.status === "approved")

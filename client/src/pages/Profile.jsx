@@ -92,13 +92,11 @@ export default function Profile({ currentUser }) {
     }
   };
 
-  // Opens modal with project data
   const handleEdit = (project) => {
     setEditProject({ ...project });
     setIsEditing(true);
   };
 
-  // Save edited project (PATCH request)
   const handleSaveEdit = async () => {
   if (!editProject?._id) return;
 

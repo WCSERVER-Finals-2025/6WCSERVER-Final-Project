@@ -29,7 +29,7 @@ app.use(
       collectionName: "sessions",
     }),
     cookie: {
-      maxAge: 1000 * 60 * 60 * 24, // 1 day
+      maxAge: 1000 * 60 * 60 * 24,
     },
   })
 );
@@ -37,7 +37,6 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-// ✅ Connect to MongoDB
 (async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI!);
@@ -49,20 +48,16 @@ app.use(passport.session());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/projects", projectRoutes);
-// Serve uploads with a Content-Disposition header to encourage download
 app.use(
   "/uploads",
   express.static("uploads", {
     setHeaders: (res, filePath) => {
-      // Force download where browsers respect Content-Disposition
       res.setHeader("Content-Disposition", `attachment`);
     },
   })
 );
 app.use("/api/dashboard", dashboardRoutes);
 
-
-// ✅ Logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -81,11 +76,9 @@ app.use((req, res, next) => {
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
-
       if (logLine.length > 80) {
         logLine = logLine.slice(0, 79) + "…";
       }
-
       log(logLine);
     }
   });
@@ -93,11 +86,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// ✅ Final setup
 (async () => {
   await registerRoutes(app);
 
-  const server = http.createServer(app); // <-- ✅ FIXED: actual Node server
+  const server = http.createServer(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

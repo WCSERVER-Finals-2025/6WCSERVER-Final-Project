@@ -1,4 +1,3 @@
-// routes/users.ts
 import express from "express";
 import mongoose from "mongoose";
 import Project from "../models/Project";
@@ -10,7 +9,6 @@ import User from "../models/User";
 
 const router = express.Router();
 
-// Multer setup for resume uploads
 const uploadDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 const storage = multer.diskStorage({
@@ -20,10 +18,9 @@ const storage = multer.diskStorage({
     cb(null, `${unique}-${file.originalname}`);
   },
 });
-// Allow only common resume types and limit size to 5MB
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const allowed = [
       "application/pdf",
@@ -35,17 +32,13 @@ const upload = multer({
   },
 });
 
-// GET /api/users/:id/stats
 router.get("/:id/stats", ensureAuth, async (req, res) => {
   try {
     const userId = req.params.id;
 
-    // ✅ Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ message: "Invalid user ID" });
     }
-
-    // ✅ Single aggregation for both count and thumbsUp sum
     const stats = await Project.aggregate([
       { $match: { uploadedBy: new mongoose.Types.ObjectId(userId) } },
       { 
@@ -68,7 +61,6 @@ router.get("/:id/stats", ensureAuth, async (req, res) => {
 
 export default router;
 
-// Upload resume
 router.post("/:id/resume", ensureAuth, upload.single("resume"), async (req, res) => {
   try {
     const userId = req.params.id;
@@ -95,7 +87,6 @@ router.post("/:id/resume", ensureAuth, upload.single("resume"), async (req, res)
   }
 });
 
-// Get resume info
 router.get("/:id/resume", ensureAuth, async (req, res) => {
   try {
     const userId = req.params.id;
@@ -108,7 +99,6 @@ router.get("/:id/resume", ensureAuth, async (req, res) => {
   }
 });
 
-// Secure promote endpoint - requires PROMOTE_SECRET header
 router.post("/:id/promote", async (req, res) => {
   try {
     const secret = req.headers["x-promote-secret"] || req.body?.secret;

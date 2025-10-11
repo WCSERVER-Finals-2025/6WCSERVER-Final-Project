@@ -25,10 +25,9 @@ export default function Login({ onLogin }) {
 
   const baseUrl =
     import.meta.env.MODE === "development"
-      ? "http://localhost:5000" // backend in dev
-      : ""; // same origin in production
+      ? "http://localhost:5000"
+      : "";
 
-  // 🟢 Check session on mount
   useEffect(() => {
     (async () => {
       try {
@@ -57,7 +56,7 @@ export default function Login({ onLogin }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
-        credentials: "include", // keep session cookies
+        credentials: "include",
       });
 
       const data = await response.json();

@@ -9,7 +9,6 @@ import { Link } from "wouter";
 export default function ProfileCard({ user }) {
   const [stats, setStats] = useState({ projectsCount: 0, rating: 0 });
 
-  // Fetch user stats dynamically
   useEffect(() => {
     const fetchStats = async () => {
       try {

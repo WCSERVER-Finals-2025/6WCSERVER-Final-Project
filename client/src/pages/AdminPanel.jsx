@@ -12,7 +12,6 @@ export default function AdminPanel({ currentUser }) {
   const [pendingProjects, setPendingProjects] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Fetch pending projects dynamically
   useEffect(() => {
     if (!currentUser?.id) return;
 
@@ -41,7 +40,6 @@ export default function AdminPanel({ currentUser }) {
     fetchPending();
   }, [currentUser?.id]);
 
-  // ✅ Approve or Reject project
   const handleUpdateStatus = async (projectId, status) => {
     try {
       const res = await fetch(`/api/projects/${projectId}`, {
@@ -54,7 +52,6 @@ export default function AdminPanel({ currentUser }) {
       if (!res.ok) throw new Error("Failed to update project status");
       const data = await res.json();
 
-      // Remove project from pending list
       setPendingProjects((prev) => prev.filter((p) => p._id !== projectId));
 
       toast({

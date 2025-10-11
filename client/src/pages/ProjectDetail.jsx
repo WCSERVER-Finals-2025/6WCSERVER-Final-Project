@@ -17,7 +17,6 @@ export default function ProjectDetail({ currentUser }) {
   const [newComment, setNewComment] = useState("");
   const [userVote, setUserVote] = useState(null);
 
-  // Fetch project data
   useEffect(() => {
     if (!params?.id) return;
 
@@ -29,10 +28,9 @@ export default function ProjectDetail({ currentUser }) {
         if (!res.ok) throw new Error("Failed to fetch project");
 
         const data = await res.json();
-        setProject(data); // backend sends project directly
+        setProject(data);
         setComments(data.comments || []);
 
-        // Check if current user voted
         const vote = data.votes?.find((v) => v.userId === currentUser?.id);
         setUserVote(vote?.type || null);
       } catch (error) {
@@ -48,7 +46,6 @@ export default function ProjectDetail({ currentUser }) {
     fetchProject();
   }, [params.id, currentUser?.id]);
 
-  // Add comment
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
 
@@ -59,7 +56,7 @@ export default function ProjectDetail({ currentUser }) {
         body: JSON.stringify({
           author: currentUser?.name || "Anonymous",
           text: newComment,
-          createdAt: new Date(), // ✅ Add createdAt here
+          createdAt: new Date(),
         }),
         credentials: "include",
       });
@@ -80,7 +77,6 @@ export default function ProjectDetail({ currentUser }) {
     }
   };
 
-  // Voting
   const handleVote = async (type) => {
     try {
       const res = await fetch(`/api/projects/${params.id}/vote`, {
@@ -116,20 +112,16 @@ export default function ProjectDetail({ currentUser }) {
   const handleDownload = (file) => {
     if (!file || !file.path) return;
     try {
-      // Ensure absolute URL so anchor download works consistently
-      // Allow overriding backend origin via window.__env__ (can be injected at build time)
       const backendOrigin = (window.__env__ && window.__env__.BACKEND_URL) || window.location.origin;
       const url = file.path.startsWith("http") ? file.path : `${backendOrigin}${file.path}`;
       toast({ title: "Download started", description: file.name });
       const a = document.createElement("a");
       a.href = url;
       a.download = file.name || "";
-      // some browsers ignore download for cross-origin, fallback to opening in new tab
       document.body.appendChild(a);
       a.click();
       a.remove();
     } catch (err) {
-      // fallback
       toast({ title: "Download failed", description: "Opening file in a new tab instead.", variant: "destructive" });
       window.open(file.path, "_blank");
     }

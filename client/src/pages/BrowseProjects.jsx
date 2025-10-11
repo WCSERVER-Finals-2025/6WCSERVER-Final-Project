@@ -22,10 +22,8 @@ export default function BrowseProjects({ currentUser }) {
           credentials: "include",
         });
 
-        // 🧠 Check for valid JSON response
         const contentType = res.headers.get("content-type") || "";
         if (!res.ok) {
-          // Handle 401 (unauthenticated) or server errors gracefully
           if (res.status === 401 || res.status === 403) {
             setError("You must be logged in to view this content.");
             setProjects([]);

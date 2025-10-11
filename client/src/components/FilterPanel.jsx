@@ -8,7 +8,6 @@ export default function FilterPanel({
   onTagToggle,
   onClearFilters,
 }) {
-  // Use shared courses list; prepend "All" option for the UI
   const courses = ["All", ...sharedCourses];
   const [tags, setTags] = useState(["React", "Node", "ML", "CSS", "UI"]);
   const [loadingTags, setLoadingTags] = useState(false);

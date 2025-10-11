@@ -14,21 +14,16 @@ export default function Dashboard({ currentUser }) {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        // Normal users only see approved projects
-        // Admins can see all
   const statusQuery = isStaff(currentUser) ? "" : "status=approved";
 
-        // Feed
         const feedRes = await fetch(`/api/projects?${statusQuery}`, { credentials: "include" });
         const feedData = await feedRes.json();
         setFeedProjects(feedData || []);
 
-        // Recent approved projects (last 5)
         const recentRes = await fetch(`/api/projects?${statusQuery}&limit=5`, { credentials: "include" });
         const recentData = await recentRes.json();
         setRecentProjects(recentData || []);
 
-        // Top projects (based on thumbsUp)
         const topRes = await fetch(`/api/projects?${statusQuery}&sort=thumbsUp`, { credentials: "include" });
         const topData = await topRes.json();
         setTopProjects(topData || []);
@@ -44,7 +39,7 @@ export default function Dashboard({ currentUser }) {
     <div className="flex h-screen bg-background">
       <Sidebar
         currentUser={currentUser}
-        pendingCount={0} // can dynamically fetch pending count if needed
+        pendingCount={0} 
         onLogout={async () => {
           try {
             await fetch("/api/logout", { method: "POST", credentials: "include" });

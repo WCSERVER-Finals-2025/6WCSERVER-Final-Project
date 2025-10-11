@@ -1,4 +1,3 @@
-// Project.ts
 import mongoose, { Schema, Document } from "mongoose";
 
 interface IFile {
@@ -10,7 +9,7 @@ interface IFile {
 interface IComment {
   author: string;
   text: string;
-  createdAt: Date; // rename from "date" to "createdAt" for consistency
+  createdAt: Date;
 }
 
 interface IVote {
@@ -38,9 +37,9 @@ const commentSchema = new Schema<IComment>(
   {
     author: { type: String, required: true },
     text: { type: String, required: true },
-    createdAt: { type: Date, default: Date.now }, // use createdAt
+    createdAt: { type: Date, default: Date.now },
   },
-  { _id: true } // keep _id so Mongoose generates it
+  { _id: true }
 );
 
 const fileSchema = new Schema<IFile>(
@@ -76,7 +75,7 @@ const projectSchema = new Schema<IProject>(
       },
     ],
   },
-  { timestamps: true } // createdAt / updatedAt auto
+  { timestamps: true }
 );
 
 

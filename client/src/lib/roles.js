@@ -7,6 +7,5 @@ export function isTeacher(user) {
 }
 
 export function isStaff(user) {
-  // staff includes teachers and admins
   return isAdmin(user) || isTeacher(user);
 }

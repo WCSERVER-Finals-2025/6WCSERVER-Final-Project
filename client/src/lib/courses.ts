@@ -1,4 +1,3 @@
-// Shared list of courses used across the app
 export const courses = [
   "Web Development",
   "Network Administration",
