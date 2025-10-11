@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { courses as sharedCourses } from "@/lib/courses";
 
 export default function FilterPanel({
   selectedCourse,
@@ -7,17 +8,8 @@ export default function FilterPanel({
   onTagToggle,
   onClearFilters,
 }) {
-  // Small default lists — this keeps the component self-contained.
-  // The page that uses this component can replace with dynamic values later.
-  const courses = [
-    "All",
-    "Web Development",
-    "Mobile Development",
-    "Data Science",
-    "Game Development",
-    "Machine Learning",
-    "Cybersecurity",
-  ];
+  // Use shared courses list; prepend "All" option for the UI
+  const courses = ["All", ...sharedCourses];
   const [tags, setTags] = useState(["React", "Node", "ML", "CSS", "UI"]);
   const [loadingTags, setLoadingTags] = useState(false);
 

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Upload, X, File } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { courses } from "@/lib/courses";
 
 export default function UploadProject({ currentUser }) {
   const [, setLocation] = useLocation();
@@ -29,14 +30,7 @@ export default function UploadProject({ currentUser }) {
   });
   const [currentTag, setCurrentTag] = useState("");
 
-  const courses = [
-    "Web Development",
-    "Mobile Development",
-    "Data Science",
-    "Game Development",
-    "Machine Learning",
-    "Cybersecurity"
-  ];
+  // courses imported from shared module
 
   const handleAddTag = () => {
     if (currentTag && !formData.tags.includes(currentTag)) {

@@ -97,15 +97,30 @@ router.get("/", async (req, res) => {
     if (userId) query.uploadedBy = userId;
     if (status) query.status = status;
 
+    // Development debug: log incoming parameters and final query
+    // NOTE: remove or silence this in production
+    console.debug("[debug] GET /api/projects incoming", {
+      queryParams: { userId, status },
+      sessionUser: currentUser,
+      isAdmin,
+      initialQuery: query,
+    });
+
     // For guests, only show approved projects
     if (!currentUser) {
       query.status = "approved";
-    } else if (!isAdmin) {
-      // Normal users see approved + their own pending
-      query.$or = [
-        { status: "approved" },
-        { status: "pending", uploadedBy: currentUser.id },
-      ];
+    } else {
+      // If the request is for a specific user's projects and that user
+      // is the logged-in user, allow showing all statuses (owner view).
+      const isRequestingOwn = !!(userId && currentUser && String(userId) === String(currentUser.id));
+
+      if (!isAdmin && !isRequestingOwn) {
+        // Normal users see approved + their own pending
+        query.$or = [
+          { status: "approved" },
+          { status: "pending", uploadedBy: currentUser.id },
+        ];
+      }
     }
 
     const projects = await Project.find(query)
