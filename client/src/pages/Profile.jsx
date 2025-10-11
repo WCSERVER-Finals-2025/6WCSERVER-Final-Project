@@ -16,6 +16,8 @@ import {
 import { Download, Trash, Edit } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Link } from "wouter";
+import { isTeacher } from "@/lib/roles";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Profile({ currentUser }) {
   const [myProjects, setMyProjects] = useState([]);
@@ -25,6 +27,8 @@ export default function Profile({ currentUser }) {
   // Modal state
   const [isEditing, setIsEditing] = useState(false);
   const [editProject, setEditProject] = useState(null);
+  const { toast } = useToast();
+  const [resume, setResume] = useState(null);
 
   useEffect(() => {
     if (!currentUser?.id) return;
@@ -46,6 +50,18 @@ export default function Profile({ currentUser }) {
     };
 
     fetchProjects();
+    // fetch resume info
+    const fetchResume = async () => {
+      try {
+        const res = await fetch(`/api/users/${currentUser.id}/resume`, { credentials: "include" });
+        if (!res.ok) return;
+        const data = await res.json();
+        setResume(data);
+      } catch (err) {
+        console.warn("Could not fetch resume info", err);
+      }
+    };
+    fetchResume();
   }, [currentUser?.id]);
 
   const handleDelete = async (projectId) => {
@@ -148,8 +164,8 @@ export default function Profile({ currentUser }) {
             </Avatar>
             <div className="flex-1">
               <h1 className="text-3xl font-bold">{currentUser?.name}</h1>
-              <Badge variant="secondary" className="mb-4">
-                {currentUser?.role === "teacher" ? "Teacher" : "Student"}
+                <Badge variant="secondary" className="mb-4">
+                {isTeacher(currentUser) ? "Teacher" : "Student"}
               </Badge>
 
               <div className="grid grid-cols-3 gap-6">
@@ -170,10 +186,54 @@ export default function Profile({ currentUser }) {
               </div>
 
               <div className="mt-6">
-                <Button variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Resume
-                </Button>
+                <input
+                  id="resume-input"
+                  type="file"
+                  accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const form = new FormData();
+                    form.append("resume", file);
+                    try {
+                      const res = await fetch(`/api/users/${currentUser.id}/resume`, {
+                        method: "POST",
+                        body: form,
+                        credentials: "include",
+                      });
+                      if (!res.ok) throw new Error("Upload failed");
+                      const data = await res.json();
+                      toast({ title: "Resume uploaded" });
+                      setResume(data.resume);
+                    } catch (err) {
+                      console.error(err);
+                      toast({ title: "Upload failed", variant: "destructive" });
+                    }
+                  }}
+                />
+
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => document.getElementById("resume-input").click()}>
+                    Upload Resume
+                  </Button>
+
+                  <Button variant="outline" onClick={() => {
+                    if (!resume?.path) return toast({ title: "No resume", description: "No resume uploaded" });
+                    // reuse ProjectDetail download pattern
+                    const backendOrigin = (window.__env__ && window.__env__.BACKEND_URL) || window.location.origin;
+                    const url = resume.path.startsWith("http") ? resume.path : `${backendOrigin}${resume.path}`;
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = resume.name || "resume";
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                  }}>
+                    <Download className="h-4 w-4 mr-2" />
+                    {resume ? "Download Resume" : "No Resume"}
+                  </Button>
+                </div>
               </div>
             </div>
           </Card>

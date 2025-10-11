@@ -10,26 +10,49 @@ export default function BrowseProjects({ currentUser }) {
   const [selectedTags, setSelectedTags] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // --- Fetch projects dynamically from API ---
   useEffect(() => {
-    if (!currentUser?.id) return;
-
     const fetchProjects = async () => {
       try {
         setLoading(true);
-        const res = await fetch("/api/projects", { credentials: "include" });
+        setError(null);
+
+        const res = await fetch("/api/projects", {
+          credentials: "include",
+        });
+
+        // 🧠 Check for valid JSON response
+        const contentType = res.headers.get("content-type") || "";
+        if (!res.ok) {
+          // Handle 401 (unauthenticated) or server errors gracefully
+          if (res.status === 401 || res.status === 403) {
+            setError("You must be logged in to view this content.");
+            setProjects([]);
+            return;
+          }
+          throw new Error(`Server returned ${res.status}`);
+        }
+
+        if (!contentType.includes("application/json")) {
+          console.warn("Non-JSON response from /api/projects — likely HTML login redirect.");
+          setError("Unexpected server response. Please log in again.");
+          setProjects([]);
+          return;
+        }
+
         const data = await res.json();
-        setProjects(data || []);
+        setProjects(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Error fetching projects:", err);
+        setError("Failed to load projects.");
       } finally {
         setLoading(false);
       }
     };
 
     fetchProjects();
-  }, [currentUser]);
+  }, [currentUser?.id]);
 
   const handleTagToggle = (tag) => {
     setSelectedTags((prev) =>
@@ -43,18 +66,17 @@ export default function BrowseProjects({ currentUser }) {
     setSearchQuery("");
   };
 
-  // --- Filter projects for search, course, and tags ---
   const filteredProjects = projects.filter((p) => {
     const matchesSearch =
       !searchQuery ||
       p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.author?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+      p.uploadedBy?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.tags?.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const matchesCourse = !selectedCourse || p.course === selectedCourse;
-
     const matchesTags =
-      selectedTags.length === 0 || p.tags.some((tag) => selectedTags.includes(tag));
+      selectedTags.length === 0 ||
+      p.tags?.some((tag) => selectedTags.includes(tag));
 
     return matchesSearch && matchesCourse && matchesTags;
   });
@@ -85,11 +107,22 @@ export default function BrowseProjects({ currentUser }) {
             />
 
             <div className="space-y-4">
-              {loading && <p className="text-muted-foreground">Loading projects...</p>}
-              {!loading && filteredProjects.length === 0 && (
+              {loading && (
+                <p className="text-muted-foreground">Loading projects...</p>
+              )}
+
+              {error && (
+                <p className="text-destructive">
+                  ⚠️ {error}
+                </p>
+              )}
+
+              {!loading && !error && filteredProjects.length === 0 && (
                 <p className="text-muted-foreground">No projects found.</p>
               )}
+
               {!loading &&
+                !error &&
                 filteredProjects.map((project) => (
                   <ProjectCard
                     key={project._id || project.id}

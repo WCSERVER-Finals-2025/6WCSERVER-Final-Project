@@ -2,6 +2,7 @@ import { Link, useLocation } from "wouter";
 import { Home, FolderOpen, Upload, User, FileCheck, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { isStaff } from "@/lib/roles";
 
 export default function Sidebar({ currentUser, pendingCount = 0, onLogout }) {
   const [location, setLocation] = useLocation();
@@ -41,7 +42,7 @@ export default function Sidebar({ currentUser, pendingCount = 0, onLogout }) {
     { path: "/profile", icon: User, label: "My Profile" },
   ];
 
-  const links = currentUser?.role === "teacher" ? teacherLinks : studentLinks;
+  const links = isStaff(currentUser) ? teacherLinks : studentLinks;
 
   return (
     <div className="w-64 bg-sidebar border-r border-sidebar-border h-screen flex flex-col">

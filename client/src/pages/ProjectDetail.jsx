@@ -113,6 +113,28 @@ export default function ProjectDetail({ currentUser }) {
     }
   };
 
+  const handleDownload = (file) => {
+    if (!file || !file.path) return;
+    try {
+      // Ensure absolute URL so anchor download works consistently
+      // Allow overriding backend origin via window.__env__ (can be injected at build time)
+      const backendOrigin = (window.__env__ && window.__env__.BACKEND_URL) || window.location.origin;
+      const url = file.path.startsWith("http") ? file.path : `${backendOrigin}${file.path}`;
+      toast({ title: "Download started", description: file.name });
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = file.name || "";
+      // some browsers ignore download for cross-origin, fallback to opening in new tab
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (err) {
+      // fallback
+      toast({ title: "Download failed", description: "Opening file in a new tab instead.", variant: "destructive" });
+      window.open(file.path, "_blank");
+    }
+  };
+
   if (!project) {
     return (
       <div className="flex h-screen items-center justify-center text-muted-foreground">
@@ -173,7 +195,7 @@ export default function ProjectDetail({ currentUser }) {
                       <div className="font-medium">{file.name}</div>
                       <div className="text-sm text-muted-foreground">{file.size}</div>
                     </div>
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="outline" type="button" onClick={() => handleDownload(file)}>
                       <Download className="h-4 w-4 mr-2" /> Download
                     </Button>
                   </div>

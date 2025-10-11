@@ -49,7 +49,16 @@ app.use(passport.session());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/projects", projectRoutes);
-app.use("/uploads", express.static("uploads"));
+// Serve uploads with a Content-Disposition header to encourage download
+app.use(
+  "/uploads",
+  express.static("uploads", {
+    setHeaders: (res, filePath) => {
+      // Force download where browsers respect Content-Disposition
+      res.setHeader("Content-Disposition", `attachment`);
+    },
+  })
+);
 app.use("/api/dashboard", dashboardRoutes);
 
 

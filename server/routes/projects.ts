@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs";
 import Project from "../models/Project";
 import { ensureAuth } from "./auth";
+import { isStaff } from "../lib/roles";
 
 const router = express.Router();
 
@@ -88,7 +89,8 @@ router.get("/", async (req, res) => {
   try {
     const { userId, status } = req.query;
     const currentUser = req.session.user;
-    const isAdmin = currentUser?.role === "admin";
+  // treat teachers as staff (admin-like) as well
+    const isAdmin = isStaff(currentUser);
 
     const query: any = {};
 
@@ -111,9 +113,26 @@ router.get("/", async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(50); // safety limit
 
+    // This endpoint returns user-specific content (depends on session/role).
+    // Prevent intermediary/browser caching (304 Not Modified) from returning stale results.
+    res.setHeader("Cache-Control", "no-store");
+    // Indicate response varies by Origin and Cookie (sessions)
+    res.setHeader("Vary", "Origin, Cookie");
     res.json(projects);
   } catch (err) {
     console.error("Fetch error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Return distinct tags used across projects
+router.get("/tags", async (req, res) => {
+  try {
+    // Use MongoDB aggregation to get distinct tags
+    const tags = await Project.distinct("tags");
+    res.json(tags.sort());
+  } catch (err) {
+    console.error("Error fetching tags:", err);
     res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -211,8 +230,8 @@ router.delete("/:id", ensureAuth, async (req, res) => {
 
     if (!project) return res.status(404).json({ message: "Project not found" });
 
-    const isOwner = project.uploadedBy?.toString() === currentUser?.id?.toString();
-    const isAdmin = currentUser?.role === "admin";
+  const isOwner = project.uploadedBy?.toString() === currentUser?.id?.toString();
+  const isAdmin = isStaff(currentUser);
     if (!isOwner && !isAdmin)
       return res.status(403).json({ message: "Not authorized" });
 
@@ -234,8 +253,8 @@ router.put("/:id", ensureAuth, async (req, res) => {
     if (!project) return res.status(404).json({ message: "Project not found" });
 
     // Authorization: only owner or admin can edit
-    const isOwner = project.uploadedBy?.toString() === currentUser?.id?.toString();
-    const isAdmin = currentUser?.role === "admin";
+  const isOwner = project.uploadedBy?.toString() === currentUser?.id?.toString();
+  const isAdmin = isStaff(currentUser);
     if (!isOwner && !isAdmin)
       return res.status(403).json({ message: "Not authorized" });
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { isStaff } from "@/lib/roles";
 import Sidebar from "@/components/Sidebar";
 import ProfileCard from "@/components/ProfileCard";
 import RecentApprovedWidget from "@/components/RecentApprovedWidget";
@@ -15,7 +16,7 @@ export default function Dashboard({ currentUser }) {
       try {
         // Normal users only see approved projects
         // Admins can see all
-        const statusQuery = currentUser?.role === "admin" ? "" : "status=approved";
+  const statusQuery = isStaff(currentUser) ? "" : "status=approved";
 
         // Feed
         const feedRes = await fetch(`/api/projects?${statusQuery}`, { credentials: "include" });

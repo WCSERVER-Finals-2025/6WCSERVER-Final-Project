@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { isTeacher } from "@/lib/roles";
 import { Link } from "wouter";
 
 export default function ProfileCard({ user }) {
@@ -44,7 +45,7 @@ export default function ProfileCard({ user }) {
             {user?.name}
           </h3>
           <Badge variant="secondary" className="mt-2" data-testid="badge-user-role">
-            {user?.role === "teacher" ? "Teacher" : "Student"}
+            {isTeacher(user) ? "Teacher" : "Student"}
           </Badge>
         </div>
 
