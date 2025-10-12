@@ -47,7 +47,7 @@ export default function Sidebar({ currentUser, pendingCount = 0, onLogout }) {
   return (
     <div className="w-64 bg-sidebar border-r border-sidebar-border h-screen flex flex-col">
       <div className="p-6 border-b border-sidebar-border">
-        <h1 className="text-xl font-bold text-sidebar-foreground">Student Portfolio</h1>
+        <h1 className="text-xl font-bold text-sidebar-foreground">Projectory</h1>
       </div>
 
       <nav className="flex-1 p-4 space-y-2">
