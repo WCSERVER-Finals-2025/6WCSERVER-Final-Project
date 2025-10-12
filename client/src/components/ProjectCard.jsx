@@ -2,14 +2,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
-
-// small helper to safely read nested values that may be populated or just ids
-const getUploaderName = (uploadedBy) => {
-  if (!uploadedBy) return "Unknown";
-  if (typeof uploadedBy === "string") return uploadedBy;
-  // mongoose populate usually provides { _id, name }
-  return uploadedBy.name || uploadedBy.email || uploadedBy._id || "Unknown";
-};
+import { getUploaderName } from "@/lib/uploader";
 
 export default function ProjectCard({ project }) {
   // Fallbacks in case some data is missing

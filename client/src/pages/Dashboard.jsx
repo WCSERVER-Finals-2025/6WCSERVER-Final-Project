@@ -8,7 +8,6 @@ import ProjectCard from "@/components/ProjectCard";
 
 export default function Dashboard({ currentUser }) {
   const [recentProjects, setRecentProjects] = useState([]);
-  const [topProjects, setTopProjects] = useState([]);
   const [feedProjects, setFeedProjects] = useState([]);
 
   useEffect(() => {
@@ -24,9 +23,7 @@ export default function Dashboard({ currentUser }) {
         const recentData = await recentRes.json();
         setRecentProjects(recentData || []);
 
-        const topRes = await fetch(`/api/projects?${statusQuery}&sort=thumbsUp`, { credentials: "include" });
-        const topData = await topRes.json();
-        setTopProjects(topData || []);
+  // Top projects will be fetched by the TopProjectsWidget itself.
       } catch (error) {
         console.error("Failed to fetch projects:", error);
       }
@@ -68,7 +65,7 @@ export default function Dashboard({ currentUser }) {
           <div className="space-y-4">
             <ProfileCard user={currentUser} />
             <RecentApprovedWidget projects={recentProjects || []} />
-            <TopProjectsWidget projects={topProjects || []} />
+            <TopProjectsWidget />
           </div>
         </div>
       </div>

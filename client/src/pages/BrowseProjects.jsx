@@ -3,6 +3,7 @@ import Sidebar from "@/components/Sidebar";
 import SearchBar from "@/components/SearchBar";
 import FilterPanel from "@/components/FilterPanel";
 import ProjectCard from "@/components/ProjectCard";
+import { getUploaderName } from "@/lib/uploader";
 
 export default function BrowseProjects({ currentUser }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -68,7 +69,7 @@ export default function BrowseProjects({ currentUser }) {
     const matchesSearch =
       !searchQuery ||
       p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.uploadedBy?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    getUploaderName(p.uploadedBy).toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.tags?.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const matchesCourse = !selectedCourse || p.course === selectedCourse;
