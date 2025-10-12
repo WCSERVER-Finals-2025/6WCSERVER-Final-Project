@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
+import { Link } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -99,7 +100,11 @@ export default function AdminPanel({ currentUser }) {
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                      <h3 className="text-xl font-semibold mb-1">{project.title || "Untitled"}</h3>
+                      <h3 className="text-xl font-semibold mb-1">
+                        <Link href={`/project/${project._id}`} className="underline">
+                          {project.title || "Untitled"}
+                        </Link>
+                      </h3>
                       <p className="text-sm text-muted-foreground">
                         by {project.author || "Unknown"}
                       </p>

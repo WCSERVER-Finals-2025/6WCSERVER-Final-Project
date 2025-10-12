@@ -44,7 +44,7 @@ export default function ProjectDetail({ currentUser }) {
     };
 
     fetchProject();
-  }, [params.id, currentUser?.id]);
+  }, [params?.id, currentUser?.id]);
 
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
