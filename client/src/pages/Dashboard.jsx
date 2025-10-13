@@ -33,13 +33,13 @@ export default function Dashboard({ currentUser }) {
   }, [currentUser?.role]);
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50">
       <Sidebar
         currentUser={currentUser}
         pendingCount={0} 
         onLogout={async () => {
           try {
-            await fetch("/api/logout", { method: "POST", credentials: "include" });
+            await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
             window.location.reload();
           } catch (error) {
             console.error("Logout failed:", error);
@@ -52,10 +52,10 @@ export default function Dashboard({ currentUser }) {
           <div className="space-y-6">
             {/* Feed */}
             <div>
-              <h2 className="text-2xl font-bold mb-4">Feed</h2>
+              <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Feed</h2>
               <div className="space-y-4">
                 {(feedProjects || []).map((project) => (
-                  <ProjectCard key={project._id || project.id} project={project} />
+                  <ProjectCard key={project._id || project.id} project={project} currentUser={currentUser} />
                 ))}
               </div>
             </div>

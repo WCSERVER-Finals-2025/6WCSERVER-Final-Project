@@ -81,12 +81,12 @@ export default function BrowseProjects({ currentUser }) {
   });
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50">
       <Sidebar currentUser={currentUser} />
 
       <div className="flex-1 overflow-auto">
         <div className="p-6 max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold mb-6">Browse Projects</h1>
+          <h1 className="text-4xl font-bold mb-6 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Browse Projects</h1>
 
           <div className="mb-6">
             <SearchBar
@@ -126,6 +126,7 @@ export default function BrowseProjects({ currentUser }) {
                   <ProjectCard
                     key={project._id || project.id}
                     project={project}
+                    currentUser={currentUser}
                   />
                 ))}
             </div>

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,7 +13,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Download, Trash, Edit } from "lucide-react";
+import { Download, Trash, Edit, Upload } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Link } from "wouter";
 import { isTeacher } from "@/lib/roles";
@@ -28,7 +28,10 @@ export default function Profile({ currentUser }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editProject, setEditProject] = useState(null);
   const { toast } = useToast();
-  const [resume, setResume] = useState(null);
+  const [resumes, setResumes] = useState([]);
+  const [userProfile, setUserProfile] = useState(null);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({ name: "", bio: "" });
 
   useEffect(() => {
     if (!currentUser?.id) return;
@@ -49,19 +52,32 @@ export default function Profile({ currentUser }) {
       }
     };
 
-    fetchProjects();
-    // fetch resume info
-    const fetchResume = async () => {
+    const fetchUserProfile = async () => {
       try {
-        const res = await fetch(`/api/users/${currentUser.id}/resume`, { credentials: "include" });
+        const res = await fetch(`/api/users/${currentUser.id}`, { credentials: "include" });
         if (!res.ok) return;
         const data = await res.json();
-        setResume(data);
+        setUserProfile(data);
+        setProfileForm({ name: data.name || "", bio: data.bio || "" });
       } catch (err) {
-        console.warn("Could not fetch resume info", err);
+        console.warn("Could not fetch user profile", err);
       }
     };
-    fetchResume();
+
+    const fetchResumes = async () => {
+      try {
+        const res = await fetch(`/api/users/${currentUser.id}/resumes`, { credentials: "include" });
+        if (!res.ok) return;
+        const data = await res.json();
+        setResumes(data || []);
+      } catch (err) {
+        console.warn("Could not fetch resumes", err);
+      }
+    };
+
+    fetchProjects();
+    fetchUserProfile();
+    fetchResumes();
   }, [currentUser?.id]);
 
   const handleDelete = async (projectId) => {
@@ -72,17 +88,19 @@ export default function Profile({ currentUser }) {
         credentials: "include",
       });
 
-      const text = await res.text(); // read the raw response
+      const text = await res.text();
+      let data;
       try {
-        const data = JSON.parse(text);
-        if (!res.ok) throw new Error(data.message || "Delete failed");
-        setMyProjects((prev) => prev.filter((p) => p._id !== projectId));
-        alert("Project deleted successfully");
-      } catch (err) {
+        data = JSON.parse(text);
+      } catch (parseErr) {
         console.error("Delete parse error:", text);
-        alert("Delete failed: " + err.message);
+        alert("Delete failed: Invalid response from server");
+        return;
       }
-      if (!res.ok) throw new Error(data.message || "Delete failed");
+
+      if (!res.ok) {
+        throw new Error(data.message || "Delete failed");
+      }
 
       setMyProjects((prev) => prev.filter((p) => p._id !== projectId));
       alert("Project deleted successfully");
@@ -138,6 +156,84 @@ export default function Profile({ currentUser }) {
   }
 };
 
+  const handleProfilePictureUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const form = new FormData();
+    form.append("profilePicture", file);
+    try {
+      const res = await fetch(`/api/users/${currentUser.id}/profile-picture`, {
+        method: "POST",
+        body: form,
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      const data = await res.json();
+      toast({ title: "Profile picture updated" });
+      setUserProfile({ ...userProfile, profilePicture: data.profilePicture });
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Upload failed", variant: "destructive" });
+    }
+  };
+
+  const handleResumesUpload = async (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const form = new FormData();
+    Array.from(files).forEach(file => form.append("resumes", file));
+    try {
+      const res = await fetch(`/api/users/${currentUser.id}/resumes`, {
+        method: "POST",
+        body: form,
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      const data = await res.json();
+      toast({ title: `${files.length} resume(s) uploaded` });
+      setResumes(data.resumes);
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Upload failed", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteResume = async (index) => {
+    if (!confirm("Delete this resume?")) return;
+    try {
+      const res = await fetch(`/api/users/${currentUser.id}/resumes/${index}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Delete failed");
+      const data = await res.json();
+      toast({ title: "Resume deleted" });
+      setResumes(data.resumes);
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Delete failed", variant: "destructive" });
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      const res = await fetch(`/api/users/${currentUser.id}/profile`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(profileForm),
+      });
+      if (!res.ok) throw new Error("Update failed");
+      const data = await res.json();
+      toast({ title: "Profile updated" });
+      setUserProfile({ ...userProfile, ...data.user });
+      setIsEditingProfile(false);
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Update failed", variant: "destructive" });
+    }
+  };
+
   const filteredProjects = (status) => {
     if (status === "all") return myProjects;
     return myProjects.filter((p) => p.status === status);
@@ -155,18 +251,45 @@ export default function Profile({ currentUser }) {
         <div className="p-6 max-w-5xl mx-auto space-y-6">
           {/* PROFILE CARD */}
           <Card className="p-8 flex items-start gap-6">
-            <Avatar className="h-32 w-32">
-              <AvatarFallback className="text-4xl">
-                {currentUser?.name?.split(" ").map((n) => n[0]).join("") || "U"}
-              </AvatarFallback>
-            </Avatar>
+            <div className="flex flex-col items-center gap-2">
+              <Avatar className="h-32 w-32">
+                {userProfile?.profilePicture?.path && (
+                  <AvatarImage src={userProfile.profilePicture.path} alt="Profile" />
+                )}
+                <AvatarFallback className="text-4xl">
+                  {userProfile?.name?.split(" ").map((n) => n[0]).join("") || currentUser?.name?.split(" ").map((n) => n[0]).join("") || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <input
+                id="profile-pic-input"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleProfilePictureUpload}
+              />
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => document.getElementById("profile-pic-input").click()}
+              >
+                <Upload className="h-3 w-3 mr-1" /> Upload Photo
+              </Button>
+            </div>
             <div className="flex-1">
-              <h1 className="text-3xl font-bold">{currentUser?.name}</h1>
-                <Badge variant="secondary" className="mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <h1 className="text-3xl font-bold">{userProfile?.name || currentUser?.name}</h1>
+                <Button size="sm" variant="ghost" onClick={() => setIsEditingProfile(true)}>
+                  <Edit className="h-4 w-4" />
+                </Button>
+              </div>
+              <Badge variant="secondary" className="mb-4">
                 {isTeacher(currentUser) ? "Teacher" : "Student"}
               </Badge>
+              {userProfile?.bio && (
+                <p className="text-muted-foreground mb-4">{userProfile.bio}</p>
+              )}
 
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-3 gap-6 mb-6">
                 <div>
                   <div className="text-3xl font-bold">{myProjects.length}</div>
                   <div className="text-sm text-muted-foreground">Total Projects</div>
@@ -183,54 +306,39 @@ export default function Profile({ currentUser }) {
                 </div>
               </div>
 
-              <div className="mt-6">
-                <input
-                  id="resume-input"
-                  type="file"
-                  accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                  className="hidden"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const form = new FormData();
-                    form.append("resume", file);
-                    try {
-                      const res = await fetch(`/api/users/${currentUser.id}/resume`, {
-                        method: "POST",
-                        body: form,
-                        credentials: "include",
-                      });
-                      if (!res.ok) throw new Error("Upload failed");
-                      const data = await res.json();
-                      toast({ title: "Resume uploaded" });
-                      setResume(data.resume);
-                    } catch (err) {
-                      console.error(err);
-                      toast({ title: "Upload failed", variant: "destructive" });
-                    }
-                  }}
-                />
-
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => document.getElementById("resume-input").click()}>
-                    Upload Resume
-                  </Button>
-
-                  <Button variant="outline" onClick={() => {
-                    if (!resume?.path) return toast({ title: "No resume", description: "No resume uploaded" });
-                    // reuse ProjectDetail download pattern
-                    const backendOrigin = (window.__env__ && window.__env__.BACKEND_URL) || window.location.origin;
-                    const url = resume.path.startsWith("http") ? resume.path : `${backendOrigin}${resume.path}`;
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = resume.name || "resume";
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                  }}>
-                    <Download className="h-4 w-4 mr-2" />
-                    {resume ? "Download Resume" : "No Resume"}
-                  </Button>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold mb-2">Resumes</h3>
+                  <input
+                    id="resumes-input"
+                    type="file"
+                    accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    className="hidden"
+                    multiple
+                    onChange={handleResumesUpload}
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" onClick={() => document.getElementById("resumes-input").click()}>
+                      <Upload className="h-4 w-4 mr-2" /> Upload Resumes
+                    </Button>
+                    {resumes.map((resume, idx) => (
+                      <div key={idx} className="flex items-center gap-2 bg-muted px-3 py-1 rounded-md">
+                        <a
+                          href={resume.path}
+                          download={resume.name}
+                          className="text-sm hover:underline"
+                        >
+                          {resume.name}
+                        </a>
+                        <button
+                          onClick={() => handleDeleteResume(idx)}
+                          className="text-destructive hover:text-destructive/80"
+                        >
+                          <Trash className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -407,6 +515,43 @@ export default function Profile({ currentUser }) {
               Cancel
             </Button>
             <Button onClick={handleSaveEdit}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* EDIT PROFILE MODAL */}
+      <Dialog open={isEditingProfile} onOpenChange={setIsEditingProfile}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Profile</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Name</label>
+              <Input
+                value={profileForm.name}
+                onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                placeholder="Enter your name"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Bio</label>
+              <Textarea
+                value={profileForm.bio}
+                onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })}
+                placeholder="Tell us about yourself..."
+                rows={4}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="mt-6 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsEditingProfile(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveProfile}>Save Changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

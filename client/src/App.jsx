@@ -37,7 +37,8 @@ function App() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/me", {
+        const baseUrl = import.meta.env.MODE === "development" ? "http://localhost:5000" : "";
+        const res = await fetch(`${baseUrl}/api/auth/me`, {
           credentials: "include",
         });
         if (res.ok) {

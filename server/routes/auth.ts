@@ -1,6 +1,6 @@
 import express from "express";
 import User from "../models/User";
-
+import bcrypt from "bcryptjs";
 import session from "express-session";
 
 declare module "express-session" {
@@ -25,7 +25,8 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ message: "Email already registered" });
     }
 
-    const user = new User({ name, email, password, role });
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = new User({ name, email, password: hashedPassword, role });
     await user.save();
 
     req.session.user = { id: user._id.toString(), name: user.name, email: user.email, role: user.role };
@@ -41,7 +42,12 @@ router.post("/login", async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
 
-    if (!user || user.password !== password) {
+    if (!user) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 

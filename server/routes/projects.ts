@@ -43,7 +43,7 @@ router.post(
         title,
         description,
         course,
-        tags: tags ? tags.split(",") : [],
+        tags: Array.isArray(tags) ? tags : (tags ? tags.split(",") : []),
         files: fileInfos,
         uploadedBy: user?.id,
         createdAt: new Date(),
@@ -180,10 +180,13 @@ router.get("/:id/comments", async (req, res) => {
   }
 });
 
-router.post("/:id/vote", async (req, res) => {
+router.post("/:id/vote", ensureAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { type, userId } = req.body;
+    const { type } = req.body;
+    const userId = req.session.user?.id;
+
+    if (!userId) return res.status(401).json({ message: "Not authenticated" });
 
     if (!["up", "down"].includes(type))
       return res.status(400).json({ message: "Invalid vote type" });
@@ -230,13 +233,20 @@ router.delete("/:id", ensureAuth, async (req, res) => {
 
     if (!project) return res.status(404).json({ message: "Project not found" });
 
-  const isOwner = project.uploadedBy?.toString() === currentUser?.id?.toString();
-  const isAdmin = isStaff(currentUser);
-    if (!isOwner && !isAdmin)
-      return res.status(403).json({ message: "Not authorized" });
+    const isOwner = project.uploadedBy?.toString() === currentUser?.id?.toString();
+    const isStaff = currentUser?.role === "admin" || currentUser?.role === "teacher";
 
-    await Project.findByIdAndDelete(id);
-    res.json({ message: "Deleted successfully" });
+    if (isOwner) {
+      await Project.findByIdAndDelete(id);
+      return res.json({ message: "Deleted successfully" });
+    }
+
+    if (isStaff && project.status === "approved") {
+      await Project.findByIdAndDelete(id);
+      return res.json({ message: "Deleted successfully" });
+    }
+
+    return res.status(403).json({ message: "Not authorized to delete this project" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });

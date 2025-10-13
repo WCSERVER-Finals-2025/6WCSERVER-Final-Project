@@ -31,7 +31,7 @@ export default function Login({ onLogin }) {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(`${baseUrl}/api/me`, {
+        const res = await fetch(`${baseUrl}/api/auth/me`, {
           credentials: "include",
         });
         if (res.ok) {
@@ -49,7 +49,7 @@ export default function Login({ onLogin }) {
     e.preventDefault();
     setLoading(true);
 
-    const endpoint = isRegister ? "/api/register" : "/api/login";
+    const endpoint = isRegister ? "/api/auth/register" : "/api/auth/login";
 
     try {
       const response = await fetch(`${baseUrl}${endpoint}`, {
@@ -79,11 +79,18 @@ export default function Login({ onLogin }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md p-8">
-        <div className="mb-6 text-center">
-          <h1 className="text-3xl font-bold mb-2">Projectory</h1>
-          <p className="text-muted-foreground">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+      <Card className="w-full max-w-md p-8 shadow-2xl border-0 bg-white/80 backdrop-blur-sm">
+        <div className="mb-8 text-center">
+          <div className="mb-4">
+            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+          </div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">Projectory</h1>
+          <p className="text-gray-600 font-medium">
             {isRegister ? "Create your account" : "Welcome back"}
           </p>
         </div>
@@ -153,7 +160,7 @@ export default function Login({ onLogin }) {
             </div>
           )}
 
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5" disabled={loading}>
             {loading
               ? "Processing..."
               : isRegister
@@ -162,11 +169,11 @@ export default function Login({ onLogin }) {
           </Button>
         </form>
 
-        <div className="mt-4 text-center text-sm">
+        <div className="mt-6 text-center">
           <button
             type="button"
             onClick={() => setIsRegister(!isRegister)}
-            className="text-primary hover:underline"
+            className="text-transparent bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text font-semibold hover:underline transition-all duration-200"
           >
             {isRegister
               ? "Already have an account? Login"

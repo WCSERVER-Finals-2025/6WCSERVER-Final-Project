@@ -5,17 +5,27 @@ import { setupVite, serveStatic, log } from "./vite";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import session from "express-session";
-import MongoStore from "connect-mongo";
+import createMemoryStore from "memorystore";
 import cors from "cors";
 import projectRoutes from "./routes/projects";
 import authRoutes from "./routes/auth";
 import passport from "passport";
 import dashboardRoutes from "./routes/dashboard";
+import userRoutes from "./routes/users";
 
 dotenv.config();
 
+const MemoryStore = createMemoryStore(session);
 const app = express();
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+
+app.set("trust proxy", 1);
+
+app.use(
+  cors({
+    origin: process.env.CLIENT_ORIGIN || true,
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -24,9 +34,8 @@ app.use(
     secret: process.env.SESSION_SECRET || "supersecretkey",
     resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({
-      mongoUrl: process.env.MONGODB_URI!,
-      collectionName: "sessions",
+    store: new MemoryStore({
+      checkPeriod: 86400000,
     }),
     cookie: {
       maxAge: 1000 * 60 * 60 * 24,
@@ -37,17 +46,28 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-(async () => {
+// ✅ MongoDB Atlas Connection Only
+async function setupDatabase() {
   try {
-    await mongoose.connect(process.env.MONGODB_URI!);
-    console.log("MongoDB connected successfully");
+    const mongoUri = process.env.MONGODB_URI;
+
+    if (!mongoUri) {
+      throw new Error("❌ MONGODB_URI not found in .env file.");
+    }
+
+    await mongoose.connect(mongoUri);
+    console.log("✅ Connected to MongoDB Atlas successfully");
   } catch (err) {
-    console.error("MongoDB connection failed:", err);
+    console.error("❌ MongoDB Atlas connection failed:", err);
+    process.exit(1);
   }
-})();
+}
+
+setupDatabase();
 
 app.use("/api/auth", authRoutes);
 app.use("/api/projects", projectRoutes);
+app.use("/api/users", userRoutes);
 app.use(
   "/uploads",
   express.static("uploads", {
@@ -58,6 +78,7 @@ app.use(
 );
 app.use("/api/dashboard", dashboardRoutes);
 
+// Logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -105,7 +126,8 @@ app.use((req, res, next) => {
   }
 
   const port = parseInt(process.env.PORT || "5000", 10);
-  server.listen(port, () => {
-    console.log(`Server running on port ${port}`);
+  const host = "0.0.0.0";
+  server.listen(port, host, () => {
+    console.log(`🚀 Server running on ${host}:${port}`);
   });
 })();
