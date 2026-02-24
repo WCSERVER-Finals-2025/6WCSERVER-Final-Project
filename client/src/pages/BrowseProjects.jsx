@@ -4,6 +4,7 @@ import SearchBar from "@/components/SearchBar";
 import FilterPanel from "@/components/FilterPanel";
 import ProjectCard from "@/components/ProjectCard";
 import { getUploaderName } from "@/lib/uploader";
+import { API_BASE } from "@/lib/api";
 
 export default function BrowseProjects({ currentUser }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -19,7 +20,7 @@ export default function BrowseProjects({ currentUser }) {
         setLoading(true);
         setError(null);
 
-        const res = await fetch("/api/projects", {
+        const res = await fetch(`${API_BASE}/api/projects`, {
           credentials: "include",
         });
 

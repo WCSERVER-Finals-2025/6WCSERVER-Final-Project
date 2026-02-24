@@ -3,13 +3,14 @@ import { Home, FolderOpen, Upload, User, FileCheck, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { isStaff } from "@/lib/roles";
+import { API_BASE } from "@/lib/api";
 
 export default function Sidebar({ currentUser, pendingCount = 0, onLogout }) {
   const [location, setLocation] = useLocation();
 
   const isActive = (path) => location === path;
 
-  const baseUrl = import.meta.env.VITE_API_URL || "";
+  const baseUrl = API_BASE;
 
   const handleLogout = async () => {
     try {

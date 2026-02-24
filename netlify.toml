@@ -5,3 +5,9 @@
 [build.environment]
   NODE_VERSION = "20"
   SECRETS_SCAN_OMIT_KEYS = "PORT"
+
+# Required for client-side routing (wouter) — serves index.html for all routes
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { courses as sharedCourses } from "@/lib/courses";
+import { API_BASE } from "@/lib/api";
 
 export default function FilterPanel({
   selectedCourse,
@@ -17,7 +18,7 @@ export default function FilterPanel({
     const fetchTags = async () => {
       setLoadingTags(true);
       try {
-        const res = await fetch("/api/projects/tags", { credentials: "include" });
+        const res = await fetch(`${API_BASE}/api/projects/tags`, { credentials: "include" });
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
         const data = await res.json();
         if (mounted && Array.isArray(data)) setTags(data);

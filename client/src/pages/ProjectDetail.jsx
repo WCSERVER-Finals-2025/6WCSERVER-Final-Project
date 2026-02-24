@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { ThumbsUp, ThumbsDown, Download, Calendar, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { API_BASE } from "@/lib/api";
 
 export default function ProjectDetail({ currentUser }) {
   const [, params] = useRoute("/project/:id");
@@ -22,7 +23,7 @@ export default function ProjectDetail({ currentUser }) {
 
     const fetchProject = async () => {
       try {
-        const res = await fetch(`/api/projects/${params.id}`, {
+        const res = await fetch(`${API_BASE}/api/projects/${params.id}`, {
           credentials: "include",
         });
         if (!res.ok) throw new Error("Failed to fetch project");
@@ -50,7 +51,7 @@ export default function ProjectDetail({ currentUser }) {
     if (!newComment.trim()) return;
 
     try {
-      const res = await fetch(`/api/projects/${params.id}/comments`, {
+      const res = await fetch(`${API_BASE}/api/projects/${params.id}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -79,7 +80,7 @@ export default function ProjectDetail({ currentUser }) {
 
   const handleVote = async (type) => {
     try {
-      const res = await fetch(`/api/projects/${params.id}/vote`, {
+      const res = await fetch(`${API_BASE}/api/projects/${params.id}/vote`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

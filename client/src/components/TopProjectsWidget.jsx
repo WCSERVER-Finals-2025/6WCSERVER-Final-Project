@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
 import { ThumbsUp } from "lucide-react";
+import { API_BASE } from "@/lib/api";
 
 export default function TopProjectsWidget({ projects: initialProjects = null, limit = 3 }) {
   const [projects, setProjects] = useState(initialProjects || []);
@@ -18,7 +19,7 @@ export default function TopProjectsWidget({ projects: initialProjects = null, li
       setError(null);
       try {
         // Query only approved projects sorted by thumbsUp
-        const res = await fetch(`/api/projects?status=approved&sort=thumbsUp&limit=${encodeURIComponent(limit)}`, {
+        const res = await fetch(`${API_BASE}/api/projects?status=approved&sort=thumbsUp&limit=${encodeURIComponent(limit)}`, {
           credentials: "include",
         });
         if (!res.ok) throw new Error(`Server returned ${res.status}`);

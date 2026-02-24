@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { API_BASE } from "@/lib/api";
 
 export default function Login({ onLogin }) {
   const [, setLocation] = useLocation();
@@ -23,7 +24,7 @@ export default function Login({ onLogin }) {
     role: "student",
   });
 
-  const baseUrl = import.meta.env.VITE_API_URL || "";
+  const baseUrl = API_BASE;
 
   useEffect(() => {
     (async () => {

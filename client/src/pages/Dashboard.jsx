@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { isStaff } from "@/lib/roles";
+import { API_BASE } from "@/lib/api";
 import Sidebar from "@/components/Sidebar";
 import ProfileCard from "@/components/ProfileCard";
 import RecentApprovedWidget from "@/components/RecentApprovedWidget";
@@ -15,11 +16,11 @@ export default function Dashboard({ currentUser }) {
       try {
   const statusQuery = isStaff(currentUser) ? "" : "status=approved";
 
-        const feedRes = await fetch(`/api/projects?${statusQuery}`, { credentials: "include" });
+        const feedRes = await fetch(`${API_BASE}/api/projects?${statusQuery}`, { credentials: "include" });
         const feedData = await feedRes.json();
         setFeedProjects(feedData || []);
 
-        const recentRes = await fetch(`/api/projects?${statusQuery}&limit=5`, { credentials: "include" });
+        const recentRes = await fetch(`${API_BASE}/api/projects?${statusQuery}&limit=5`, { credentials: "include" });
         const recentData = await recentRes.json();
         setRecentProjects(recentData || []);
 
@@ -39,7 +40,7 @@ export default function Dashboard({ currentUser }) {
         pendingCount={0} 
         onLogout={async () => {
           try {
-            await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+            await fetch(`${API_BASE}/api/auth/logout`, { method: "POST", credentials: "include" });
             window.location.reload();
           } catch (error) {
             console.error("Logout failed:", error);

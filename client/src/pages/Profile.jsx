@@ -18,6 +18,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Link } from "wouter";
 import { isTeacher } from "@/lib/roles";
 import { useToast } from "@/hooks/use-toast";
+import { API_BASE } from "@/lib/api";
 
 export default function Profile({ currentUser }) {
   const [myProjects, setMyProjects] = useState([]);
@@ -39,7 +40,7 @@ export default function Profile({ currentUser }) {
     const fetchProjects = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`/api/projects?userId=${currentUser.id}`, {
+        const res = await fetch(`${API_BASE}/api/projects?userId=${currentUser.id}`, {
           credentials: "include",
         });
         if (!res.ok) throw new Error("Failed to fetch projects");
@@ -54,7 +55,7 @@ export default function Profile({ currentUser }) {
 
     const fetchUserProfile = async () => {
       try {
-        const res = await fetch(`/api/users/${currentUser.id}`, { credentials: "include" });
+        const res = await fetch(`${API_BASE}/api/users/${currentUser.id}`, { credentials: "include" });
         if (!res.ok) return;
         const data = await res.json();
         setUserProfile(data);
@@ -66,7 +67,7 @@ export default function Profile({ currentUser }) {
 
     const fetchResumes = async () => {
       try {
-        const res = await fetch(`/api/users/${currentUser.id}/resumes`, { credentials: "include" });
+        const res = await fetch(`${API_BASE}/api/users/${currentUser.id}/resumes`, { credentials: "include" });
         if (!res.ok) return;
         const data = await res.json();
         setResumes(data || []);
@@ -83,7 +84,7 @@ export default function Profile({ currentUser }) {
   const handleDelete = async (projectId) => {
     if (!confirm("Are you sure you want to delete this project?")) return;
     try {
-      const res = await fetch(`/api/projects/${projectId}`, {
+      const res = await fetch(`${API_BASE}/api/projects/${projectId}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -119,7 +120,7 @@ export default function Profile({ currentUser }) {
   if (!editProject?._id) return;
 
   try {
-    const res = await fetch(`/api/projects/${editProject._id}`, {
+    const res = await fetch(`${API_BASE}/api/projects/${editProject._id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -162,7 +163,7 @@ export default function Profile({ currentUser }) {
     const form = new FormData();
     form.append("profilePicture", file);
     try {
-      const res = await fetch(`/api/users/${currentUser.id}/profile-picture`, {
+      const res = await fetch(`${API_BASE}/api/users/${currentUser.id}/profile-picture`, {
         method: "POST",
         body: form,
         credentials: "include",
@@ -183,7 +184,7 @@ export default function Profile({ currentUser }) {
     const form = new FormData();
     Array.from(files).forEach(file => form.append("resumes", file));
     try {
-      const res = await fetch(`/api/users/${currentUser.id}/resumes`, {
+      const res = await fetch(`${API_BASE}/api/users/${currentUser.id}/resumes`, {
         method: "POST",
         body: form,
         credentials: "include",
@@ -201,7 +202,7 @@ export default function Profile({ currentUser }) {
   const handleDeleteResume = async (resumeId) => {
     if (!confirm("Delete this resume?")) return;
     try {
-      const res = await fetch(`/api/users/${currentUser.id}/resumes/${resumeId}`, {
+      const res = await fetch(`${API_BASE}/api/users/${currentUser.id}/resumes/${resumeId}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -217,7 +218,7 @@ export default function Profile({ currentUser }) {
 
   const handleSaveProfile = async () => {
     try {
-      const res = await fetch(`/api/users/${currentUser.id}/profile`, {
+      const res = await fetch(`${API_BASE}/api/users/${currentUser.id}/profile`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

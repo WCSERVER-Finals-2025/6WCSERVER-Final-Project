@@ -18,6 +18,8 @@ import { Upload, X, File } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { courses } from "@/lib/courses";
 
+import { API_BASE } from "@/lib/api";
+
 export default function UploadProject({ currentUser }) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -61,7 +63,7 @@ export default function UploadProject({ currentUser }) {
     formData.files.forEach(file => data.append("files", file));
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/projects/upload`, {
+      const res = await fetch(`${API_BASE}/api/projects/upload`, {
         method: "POST",
         body: data,
         credentials: "include",

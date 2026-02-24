@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { API_BASE } from "@/lib/api";
 
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
@@ -37,7 +38,7 @@ function App() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const baseUrl = import.meta.env.VITE_API_URL || "";
+        const baseUrl = API_BASE;
         const res = await fetch(`${baseUrl}/api/auth/me`, {
           credentials: "include",
         });

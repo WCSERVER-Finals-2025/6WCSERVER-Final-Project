@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Check, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { API_BASE } from "@/lib/api";
 
 export default function AdminPanel({ currentUser }) {
   const { toast } = useToast();
@@ -19,7 +20,7 @@ export default function AdminPanel({ currentUser }) {
     const fetchPending = async () => {
       try {
         setLoading(true);
-        const res = await fetch("/api/projects?status=pending", {
+        const res = await fetch(`${API_BASE}/api/projects?status=pending`, {
           credentials: "include",
         });
         if (!res.ok) throw new Error("Failed to fetch pending projects");
@@ -43,7 +44,7 @@ export default function AdminPanel({ currentUser }) {
 
   const handleUpdateStatus = async (projectId, status) => {
     try {
-      const res = await fetch(`/api/projects/${projectId}`, {
+      const res = await fetch(`${API_BASE}/api/projects/${projectId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),

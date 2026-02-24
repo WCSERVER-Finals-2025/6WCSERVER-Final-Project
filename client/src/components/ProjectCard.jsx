@@ -7,6 +7,7 @@ import { getUploaderName } from "@/lib/uploader";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { API_BASE } from "@/lib/api";
 
 export default function ProjectCard({ project, currentUser }) {
   const [thumbsUp, setThumbsUp] = useState(project.thumbsUp || 0);
@@ -39,7 +40,7 @@ export default function ProjectCard({ project, currentUser }) {
     }
 
     try {
-      const res = await fetch(`/api/projects/${project._id}/vote`, {
+      const res = await fetch(`${API_BASE}/api/projects/${project._id}/vote`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { isTeacher } from "@/lib/roles";
 import { Link } from "wouter";
+import { API_BASE } from "@/lib/api";
 
 export default function ProfileCard({ user }) {
   const [stats, setStats] = useState({ projectsCount: 0, rating: 0, totalThumbsDown: 0 });
@@ -13,7 +14,7 @@ export default function ProfileCard({ user }) {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await fetch(`/api/users/${user.id}/stats`, {
+        const res = await fetch(`${API_BASE}/api/users/${user.id}/stats`, {
           credentials: "include",
         });
         if (!res.ok) throw new Error("Failed to fetch stats");
@@ -26,7 +27,7 @@ export default function ProfileCard({ user }) {
 
     const fetchUserProfile = async () => {
       try {
-        const res = await fetch(`/api/users/${user.id}`, {
+        const res = await fetch(`${API_BASE}/api/users/${user.id}`, {
           credentials: "include",
         });
         if (!res.ok) return;
