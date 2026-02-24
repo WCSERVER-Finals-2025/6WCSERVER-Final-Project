@@ -9,10 +9,7 @@ export default function Sidebar({ currentUser, pendingCount = 0, onLogout }) {
 
   const isActive = (path) => location === path;
 
-  const baseUrl =
-    import.meta.env.MODE === "development"
-      ? "http://localhost:5000"
-      : "";
+  const baseUrl = import.meta.env.VITE_API_URL || "";
 
   const handleLogout = async () => {
     try {

@@ -130,6 +130,10 @@ router.post("/:id/resumes", ensureAuth, upload.array("resumes", 10), async (req,
 router.get("/:id/resumes", ensureAuth, async (req, res) => {
   try {
     const userId = req.params.id;
+    const currentUser = req.session.user;
+    if (currentUser?.id !== userId && !(currentUser?.role === "admin" || currentUser?.role === "teacher"))
+      return res.status(403).json({ message: "Not authorized" });
+
     const user = await User.findById(userId).select("resumes");
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json(user.resumes || []);
@@ -146,15 +150,15 @@ router.delete("/:id/resumes/:resumeId", ensureAuth, async (req, res) => {
     if (currentUser?.id !== userId && !(currentUser?.role === "admin" || currentUser?.role === "teacher"))
       return res.status(403).json({ message: "Not authorized" });
 
+    if (!mongoose.Types.ObjectId.isValid(resumeId))
+      return res.status(400).json({ message: "Invalid resume ID" });
+
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    const resumeIndex = parseInt(resumeId);
-    if (user.resumes && user.resumes[resumeIndex]) {
-      user.resumes.splice(resumeIndex, 1);
-    }
-    await user.save();
-    res.json({ message: "Resume deleted", resumes: user.resumes });
+    await User.findByIdAndUpdate(userId, { $pull: { resumes: { _id: resumeId } } });
+    const updatedUser = await User.findById(userId).select("resumes");
+    res.json({ message: "Resume deleted", resumes: updatedUser?.resumes || [] });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });

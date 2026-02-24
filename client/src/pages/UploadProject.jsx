@@ -61,7 +61,7 @@ export default function UploadProject({ currentUser }) {
     formData.files.forEach(file => data.append("files", file));
 
     try {
-      const res = await fetch("http://localhost:5000/api/projects/upload", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/projects/upload`, {
         method: "POST",
         body: data,
         credentials: "include",

@@ -18,7 +18,26 @@ const storage = multer.diskStorage({
     cb(null, `${unique}-${file.originalname}`);
   },
 });
-const upload = multer({ storage });
+const ALLOWED_MIME_TYPES = [
+  "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp",
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/zip", "application/x-zip-compressed",
+  "text/plain",
+];
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`File type not allowed: ${file.mimetype}`), false);
+    }
+  },
+});
 
 router.post(
 "/upload",
@@ -66,6 +85,10 @@ router.post(
 
 router.patch("/:id", ensureAuth, async (req, res) => {
   try {
+    const currentUser = req.session.user;
+    if (!isStaff(currentUser))
+      return res.status(403).json({ message: "Not authorized: staff only" });
+
     const { id } = req.params;
     const { status } = req.body;
 
@@ -95,13 +118,6 @@ router.get("/", async (req, res) => {
 
     if (userId) query.uploadedBy = userId;
     if (status) query.status = status;
-
-    console.debug("[debug] GET /api/projects incoming", {
-      queryParams: { userId, status },
-      sessionUser: currentUser,
-      isAdmin,
-      initialQuery: query,
-    });
 
     if (!currentUser) {
       query.status = "approved";
@@ -144,6 +160,11 @@ router.get("/:id", async (req, res) => {
   try {
     const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ message: "Project not found" });
+    const currentUser = req.session.user;
+    const isOwner = project.uploadedBy?.toString() === currentUser?.id;
+    if (project.status !== "approved" && !isStaff(currentUser) && !isOwner) {
+      return res.status(404).json({ message: "Project not found" });
+    }
     res.json(project);
   } catch (err) {
     console.error("Error fetching project:", err);
@@ -151,10 +172,11 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-router.post("/:id/comments", async (req, res) => {
+router.post("/:id/comments", ensureAuth, async (req, res) => {
   try {
-    const { author, text } = req.body;
-    if (!text || !author) return res.status(400).json({ message: "Author and text required" });
+    const author = req.session.user?.name ?? "Unknown";
+    const { text } = req.body;
+    if (!text) return res.status(400).json({ message: "Text required" });
 
     const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ message: "Project not found" });
@@ -236,12 +258,7 @@ router.delete("/:id", ensureAuth, async (req, res) => {
     const isOwner = project.uploadedBy?.toString() === currentUser?.id?.toString();
     const isStaff = currentUser?.role === "admin" || currentUser?.role === "teacher";
 
-    if (isOwner) {
-      await Project.findByIdAndDelete(id);
-      return res.json({ message: "Deleted successfully" });
-    }
-
-    if (isStaff && project.status === "approved") {
+    if (isOwner || isStaff) {
       await Project.findByIdAndDelete(id);
       return res.json({ message: "Deleted successfully" });
     }

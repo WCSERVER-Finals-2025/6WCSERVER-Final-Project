@@ -37,7 +37,7 @@ function App() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const baseUrl = import.meta.env.MODE === "development" ? "http://localhost:5000" : "";
+        const baseUrl = import.meta.env.VITE_API_URL || "";
         const res = await fetch(`${baseUrl}/api/auth/me`, {
           credentials: "include",
         });

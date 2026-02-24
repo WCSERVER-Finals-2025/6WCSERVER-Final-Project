@@ -198,10 +198,10 @@ export default function Profile({ currentUser }) {
     }
   };
 
-  const handleDeleteResume = async (index) => {
+  const handleDeleteResume = async (resumeId) => {
     if (!confirm("Delete this resume?")) return;
     try {
-      const res = await fetch(`/api/users/${currentUser.id}/resumes/${index}`, {
+      const res = await fetch(`/api/users/${currentUser.id}/resumes/${resumeId}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -331,7 +331,7 @@ export default function Profile({ currentUser }) {
                           {resume.name}
                         </a>
                         <button
-                          onClick={() => handleDeleteResume(idx)}
+                          onClick={() => handleDeleteResume(resume._id)}
                           className="text-destructive hover:text-destructive/80"
                         >
                           <Trash className="h-3 w-3" />

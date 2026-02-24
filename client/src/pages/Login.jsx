@@ -23,10 +23,7 @@ export default function Login({ onLogin }) {
     role: "student",
   });
 
-  const baseUrl =
-    import.meta.env.MODE === "development"
-      ? "http://localhost:5000"
-      : "";
+  const baseUrl = import.meta.env.VITE_API_URL || "";
 
   useEffect(() => {
     (async () => {

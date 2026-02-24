@@ -5,17 +5,15 @@ import { setupVite, serveStatic, log } from "./vite";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import session from "express-session";
-import createMemoryStore from "memorystore";
+import MongoStore from "connect-mongo";
 import cors from "cors";
 import projectRoutes from "./routes/projects";
 import authRoutes from "./routes/auth";
-import passport from "passport";
 import dashboardRoutes from "./routes/dashboard";
 import userRoutes from "./routes/users";
 
 dotenv.config();
 
-const MemoryStore = createMemoryStore(session);
 const app = express();
 
 app.set("trust proxy", 1);
@@ -34,17 +32,18 @@ app.use(
     secret: process.env.SESSION_SECRET || "supersecretkey",
     resave: false,
     saveUninitialized: false,
-    store: new MemoryStore({
-      checkPeriod: 86400000,
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGODB_URI,
+      ttl: 60 * 60 * 24,
     }),
     cookie: {
       maxAge: 1000 * 60 * 60 * 24,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      httpOnly: true,
     },
   })
 );
-
-app.use(passport.initialize());
-app.use(passport.session());
 
 // ✅ MongoDB Atlas Connection Only
 async function setupDatabase() {
